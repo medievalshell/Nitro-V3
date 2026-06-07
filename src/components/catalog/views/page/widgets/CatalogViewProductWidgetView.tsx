@@ -19,88 +19,94 @@ export const CatalogViewProductWidgetView: FC<{}> = props =>
         if(!product) return;
 
         roomPreviewer.reset(false);
-        roomPreviewer.updateObjectRoom('default', 'default', 'default');
+        roomPreviewer.updateObjectRoom('111', '217', '1.1');
         roomPreviewer.updateRoomWallsAndFloorVisibility(true, true);
 
-        switch(product.productType)
+        const populate = () =>
         {
-            case ProductTypeEnum.FLOOR: {
-                if(!product.furnitureData) return;
+            switch(product.productType)
+            {
+                case ProductTypeEnum.FLOOR: {
+                    if(!product.furnitureData) return;
 
-                const furniData = GetSessionDataManager().getFloorItemData(product.furnitureData.id);
-                const isPurchasableClothing = (product.furnitureData.specialType === FurniCategory.FIGURE_PURCHASABLE_SET);
-                const hasResolvableFigureSets = (() =>
-                {
-                    if(!furniData || !furniData.customParams || !furniData.customParams.length) return false;
-
-                    const parts = furniData.customParams.split(',').map(value => parseInt(value));
-
-                    for(const part of parts)
+                    const furniData = GetSessionDataManager().getFloorItemData(product.furnitureData.id);
+                    const isPurchasableClothing = (product.furnitureData.specialType === FurniCategory.FIGURE_PURCHASABLE_SET);
+                    const hasResolvableFigureSets = (() =>
                     {
-                        if(isNaN(part)) continue;
+                        if(!furniData || !furniData.customParams || !furniData.customParams.length) return false;
 
-                        if(GetAvatarRenderManager().structureData?.getFigurePartSet(part)) return true;
-                    }
+                        const parts = furniData.customParams.split(',').map(value => parseInt(value));
 
-                    return false;
-                })();
+                        for(const part of parts)
+                        {
+                            if(isNaN(part)) continue;
 
-                if(isPurchasableClothing || hasResolvableFigureSets)
-                {
-                    const customParts = furniData.customParams.split(',').map(value => parseInt(value));
-                    const figureSets: number[] = [];
+                            if(GetAvatarRenderManager().structureData?.getFigurePartSet(part)) return true;
+                        }
 
-                    for(const part of customParts)
+                        return false;
+                    })();
+
+                    if(isPurchasableClothing || hasResolvableFigureSets)
                     {
-                        if(isNaN(part)) continue;
+                        const customParts = furniData.customParams.split(',').map(value => parseInt(value));
+                        const figureSets: number[] = [];
 
-                        if(GetAvatarRenderManager().isValidFigureSetForGender(part, GetSessionDataManager().gender)) figureSets.push(part);
+                        for(const part of customParts)
+                        {
+                            if(isNaN(part)) continue;
+
+                            if(GetAvatarRenderManager().isValidFigureSetForGender(part, GetSessionDataManager().gender)) figureSets.push(part);
+                        }
+
+                        const figureString = BuildPurchasableClothingFigure(GetSessionDataManager().figure, figureSets);
+
+                        roomPreviewer.addAvatarIntoRoom(figureString, product.productClassId);
                     }
-
-                    const figureString = BuildPurchasableClothingFigure(GetSessionDataManager().figure, figureSets);
-
-                    roomPreviewer.addAvatarIntoRoom(figureString, product.productClassId);
-                }
-                else
-                {
-                    roomPreviewer.addFurnitureIntoRoom(product.productClassId, new Vector3d(90), previewStuffData, product.extraParam);
-                }
-                return;
-            }
-            case ProductTypeEnum.WALL: {
-                if(!product.furnitureData) return;
-
-                roomPreviewer.updateRoomWallsAndFloorVisibility(true, true);
-
-                switch(product.furnitureData.specialType)
-                {
-                    case FurniCategory.FLOOR:
-                        roomPreviewer.updateObjectRoom(product.extraParam);
-                        return;
-                    case FurniCategory.WALL_PAPER:
-                        roomPreviewer.updateObjectRoom(null, product.extraParam);
-                        return;
-                    case FurniCategory.LANDSCAPE: {
-                        roomPreviewer.updateObjectRoom(null, null, product.extraParam);
-
-                        const furniData = GetSessionDataManager().getWallItemDataByName('window_double_default');
-
-                        if(furniData) roomPreviewer.addWallItemIntoRoom(furniData.id, new Vector3d(90), furniData.customParams);
-                        return;
+                    else
+                    {
+                        roomPreviewer.addFurnitureIntoRoom(product.productClassId, new Vector3d(90), previewStuffData, product.extraParam);
                     }
-                    default:
-                        roomPreviewer.updateObjectRoom('default', 'default', 'default');
-                        roomPreviewer.addWallItemIntoRoom(product.productClassId, new Vector3d(90), product.extraParam);
-                        return;
+                    return;
                 }
+                case ProductTypeEnum.WALL: {
+                    if(!product.furnitureData) return;
+
+                    roomPreviewer.updateRoomWallsAndFloorVisibility(true, true);
+
+                    switch(product.furnitureData.specialType)
+                    {
+                        case FurniCategory.FLOOR:
+                            roomPreviewer.updateObjectRoom(product.extraParam);
+                            return;
+                        case FurniCategory.WALL_PAPER:
+                            roomPreviewer.updateObjectRoom(null, product.extraParam);
+                            return;
+                        case FurniCategory.LANDSCAPE: {
+                            roomPreviewer.updateObjectRoom(null, null, product.extraParam);
+
+                            const furniData = GetSessionDataManager().getWallItemDataByName('window_double_default');
+
+                            if(furniData) roomPreviewer.addWallItemIntoRoom(furniData.id, new Vector3d(90), furniData.customParams);
+                            return;
+                        }
+                        default:
+                            roomPreviewer.updateObjectRoom('101', '101', '1.1');
+                            roomPreviewer.addWallItemIntoRoom(product.productClassId, new Vector3d(90), product.extraParam);
+                            return;
+                    }
+                }
+                case ProductTypeEnum.ROBOT:
+                    roomPreviewer.addAvatarIntoRoom(product.extraParam, 0);
+                    return;
+                case ProductTypeEnum.EFFECT:
+                    roomPreviewer.addAvatarIntoRoom(GetSessionDataManager().figure, product.productClassId);
+                    return;
             }
-            case ProductTypeEnum.ROBOT:
-                roomPreviewer.addAvatarIntoRoom(product.extraParam, 0);
-                return;
-            case ProductTypeEnum.EFFECT:
-                roomPreviewer.addAvatarIntoRoom(GetSessionDataManager().figure, product.productClassId);
-                return;
-        }
+        };
+
+        populate();
+        roomPreviewer.setAutomaticStateChange(false);
     }, [ currentOffer, previewStuffData, roomPreviewer ]);
 
     if(!currentOffer) return null;
@@ -119,5 +125,5 @@ export const CatalogViewProductWidgetView: FC<{}> = props =>
         );
     }
 
-    return <LayoutRoomPreviewerView height={ 140 } roomPreviewer={ roomPreviewer } />;
+    return <LayoutRoomPreviewerView key={ currentOffer?.offerId } height={ 240 } roomPreviewer={ roomPreviewer } />;
 };
