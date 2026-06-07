@@ -1,0 +1,165 @@
+/* ============================================================
+   INFINITY GROUP HOME — widget "Stanza home gruppo" come TELA CSS.
+   Coerente col borsellino .inf-purse (stessi token viola). Tutto guidato da
+   variabili CSS sovrascrivibili da cards.css (drop-in, niente rebuild):
+   colori, gradienti, raggi, dimensioni, font, badge, bottone.
+   ============================================================ */
+.inf-group-home {
+    /* ----- KNOBS (sovrascrivibili nel tema) ----- */
+    --inf-gh-font: inherit;                     /* es: 'Volter' per il bitmap Habbo */
+    --inf-gh-width: 188px;
+    --inf-gh-radius: 12px;
+    --inf-gh-bg: linear-gradient(135deg, rgba(42, 27, 77, .92) 0%, rgba(22, 12, 48, .92) 100%);
+    --inf-gh-border: 1px solid rgba(140, 110, 255, .40);
+    --inf-gh-shadow: 0 8px 18px rgba(0, 0, 0, .35), 0 0 12px rgba(124, 58, 237, .18), inset 0 1px rgba(255, 255, 255, .08);
+
+    --inf-gh-header-bg: linear-gradient(180deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .03));
+    --inf-gh-header-border: rgba(140, 110, 255, .25);
+    --inf-gh-title-color: rgba(255, 255, 255, .92);
+    --inf-gh-title-size: 0.78rem;
+    --inf-gh-icon-size: 16px;
+
+    --inf-gh-toggle-bg: rgba(255, 255, 255, .06);
+    --inf-gh-toggle-color: rgba(255, 255, 255, .82);
+
+    --inf-gh-pad: 10px;
+    --inf-gh-badge-size: 42px;
+    --inf-gh-badge-bg: linear-gradient(135deg, #2a1b4d 0%, #160c30 100%);
+    --inf-gh-badge-border: 1px solid rgba(140, 110, 255, .45);
+    --inf-gh-badge-radius: 10px;
+
+    --inf-gh-name-color: #ffffff;
+    --inf-gh-name-size: 0.85rem;
+
+    --inf-gh-btn-bg: linear-gradient(180deg, #7c3aed, #4f46e5);
+    --inf-gh-btn-bg-hover: linear-gradient(180deg, #8b5cf6, #6366f1);
+    --inf-gh-btn-color: #ffffff;
+    --inf-gh-btn-border: 1px solid #a855f7;
+    --inf-gh-btn-radius: 8px;
+    --inf-gh-btn-height: 30px;
+    --inf-gh-btn-size: 0.82rem;
+
+    /* ----- base ----- */
+    width: 100%;
+    max-width: var(--inf-gh-width);
+    margin-top: 6px;
+    margin-left: auto;
+    overflow: hidden;
+    border: var(--inf-gh-border);
+    border-radius: var(--inf-gh-radius);
+    background: var(--inf-gh-bg);
+    box-shadow: var(--inf-gh-shadow);
+    font-family: var(--inf-gh-font);
+    pointer-events: auto;
+    transition: max-width .2s ease;
+}
+.inf-group-home.is-compact { max-width: 52px; }
+
+/* header: icona + titolo + freccia */
+.inf-group-home__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: 5px 8px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--inf-gh-header-border);
+    background: var(--inf-gh-header-bg);
+}
+.inf-group-home.is-compact .inf-group-home__header { justify-content: flex-end; }
+.inf-group-home__title-wrap { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.inf-group-home__icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex: 0 0 auto; }
+.inf-group-home__icon img { width: auto; height: var(--inf-gh-icon-size); object-fit: contain; }
+.inf-group-home__title {
+    font-size: var(--inf-gh-title-size);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--inf-gh-title-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.inf-group-home__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    flex: 0 0 auto;
+    color: var(--inf-gh-toggle-color);
+    background: var(--inf-gh-toggle-bg);
+    transition: transform .3s cubic-bezier(.22, 1, .36, 1);
+}
+.inf-group-home__toggle.is-open { transform: rotate(180deg); }
+.inf-group-home__toggle svg { width: 10px; height: 10px; }
+
+/* contenuto collassabile */
+.inf-group-home__content {
+    overflow: hidden;
+    transform-origin: top;
+    transition: max-height .45s cubic-bezier(.16, 1, .3, 1), opacity .3s ease, transform .45s cubic-bezier(.16, 1, .3, 1);
+    max-height: 280px;
+    opacity: 1;
+    transform: translateY(0);
+}
+.inf-group-home__content.is-closed {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-8px) scaleY(.95);
+    pointer-events: none;
+}
+
+/* gruppo: badge + nome (cliccabile -> info gruppo) */
+.inf-group-home__group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: var(--inf-gh-pad);
+    cursor: pointer;
+}
+.inf-group-home__badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: var(--inf-gh-badge-size);
+    height: var(--inf-gh-badge-size);
+    overflow: hidden;
+    background: var(--inf-gh-badge-bg);
+    border: var(--inf-gh-badge-border);
+    border-radius: var(--inf-gh-badge-radius);
+}
+.inf-group-home__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: var(--inf-gh-name-size);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--inf-gh-name-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* bottone azione (Gestisci / Unisciti / Abbandona / ...) */
+.inf-group-home__action { padding: 0 9px 9px; }
+.inf-group-home__btn {
+    width: 100%;
+    height: var(--inf-gh-btn-height);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: var(--inf-gh-btn-border);
+    border-radius: var(--inf-gh-btn-radius);
+    background: var(--inf-gh-btn-bg);
+    color: var(--inf-gh-btn-color);
+    font-size: var(--inf-gh-btn-size);
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18);
+    transition: filter .15s ease, transform .15s ease, background-image .15s ease;
+}
+.inf-group-home__btn:hover { background: var(--inf-gh-btn-bg-hover); transform: translateY(-1px); }
+.inf-group-home__btn:disabled { opacity: .6; cursor: default; transform: none; }

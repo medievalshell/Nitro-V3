@@ -163,7 +163,7 @@ export const GroupMembersView: FC<{}> = props =>
     if((groupId === -1) || !membersData) return null;
 
     return (
-        <NitroCardView className="w-[400px] max-h-[380px]        " theme="primary-slim">
+        <NitroCardView className="nitro-group-members w-[400px] max-h-[380px]" theme="primary-slim">
             <NitroCardHeaderView headerText={ LocalizeText('group.members.title', [ 'groupName' ], [ membersData ? membersData.groupTitle : '' ]) } onCloseClick={ event => setGroupId(-1) } />
             <NitroCardContentView overflow="hidden">
                 <div className="flex gap-2">
@@ -183,7 +183,7 @@ export const GroupMembersView: FC<{}> = props =>
                     { membersData.result.map((member, index) =>
                     {
                         return (
-                            <Flex key={ index } alignItems="center" className="p-2 bg-white rounded h-[50px] max-h-[50px]" gap={ 2 } overflow="hidden">
+                            <Flex key={ index } alignItems="center" className="inf-gm-card p-2 rounded h-[50px] max-h-[50px]" gap={ 2 } overflow="hidden">
                                 <div className="cursor-pointer relative overflow-hidden w-[40px] h-[50px]" onClick={ () => GetUserProfile(member.id) }>
                                     <LayoutAvatarImageView className="absolute -left-[25px] -top-[20px]" direction={ 2 } figure={ member.figure } headOnly={ true } />
                                 </div>

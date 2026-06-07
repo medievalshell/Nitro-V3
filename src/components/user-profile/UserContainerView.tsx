@@ -1,5 +1,5 @@
 import { CreateLinkEvent, GetSessionDataManager, RelationshipStatusInfoMessageParser, RequestFriendComposer, UserProfileParser } from '@nitrots/nitro-renderer';
-import { FC, useEffect, useMemo, useState } from 'react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { FriendlyTime, LocalizeText, SanitizeHtml, SendMessageComposer } from '../../api';
 import { LayoutAvatarImageView, LayoutBadgeImageView, Text, UserIdentityView } from '../../common';
 import { badgeEmblemDefault } from '../../assets/images/leaderboard_badge';
@@ -27,6 +27,12 @@ export const UserContainerView: FC<UserContainerViewProps> = props =>
     const selectedBadges = useMemo(() => [ ...userBadges ].slice(0, 5), [ userBadges ]);
     const totalBadges = ((userProfile as any).totalBadges ?? userBadges.length ?? 0);
 
+    // Adaptive identity text colour: sample the average luminance of the
+    // user-chosen profile background image and flag whether it is dark or light,
+    // so the overlaid name/motto/meta text can switch white↔black for contrast.
+    const avatarShellRef = useRef<HTMLDivElement>(null);
+    const [ bgIsDark, setBgIsDark ] = useState<boolean>(true);
+
     const addFriend = () =>
     {
         setRequestSent(true);
@@ -38,12 +44,76 @@ export const UserContainerView: FC<UserContainerViewProps> = props =>
         setRequestSent(userProfile.requestSent);
     }, [ userProfile ]);
 
+    useEffect(() =>
+    {
+        // Sample the luminance of whatever sits BEHIND the identity text: the
+        // profile card background image when the user set one, otherwise the
+        // window content's solid background colour (cream by default).
+        const shell = avatarShellRef.current;
+        const target = (shell?.closest('.nitro-extended-profile-window__content') as HTMLElement | null) ?? shell;
+        if(!target) return;
+
+        const isDarkFromRgb = (rgb: string): boolean | null =>
+        {
+            const m = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(rgb || '');
+            if(!m) return null;
+            const lum = (0.2126 * +m[1]) + (0.7152 * +m[2]) + (0.0722 * +m[3]);
+            return lum < 130;
+        };
+
+        const style = window.getComputedStyle(target);
+        const match = /url\(["']?([^"')]+)["']?\)/.exec(style.backgroundImage || '');
+
+        if(!match || !match[1])
+        {
+            // No card image -> decide from the solid background colour (default cream = light).
+            const fromColor = isDarkFromRgb(style.backgroundColor);
+            setBgIsDark(fromColor ?? false);
+            return;
+        }
+
+        let cancelled = false;
+        const image = new Image();
+        image.crossOrigin = 'anonymous';
+        image.onload = () =>
+        {
+            if(cancelled) return;
+            try
+            {
+                const canvas = document.createElement('canvas');
+                canvas.width = 16;
+                canvas.height = 16;
+                const ctx = canvas.getContext('2d');
+                if(!ctx) return;
+                ctx.drawImage(image, 0, 0, 16, 16);
+                const data = ctx.getImageData(0, 0, 16, 16).data;
+                let luminance = 0;
+                let count = 0;
+                for(let i = 0; i < data.length; i += 4)
+                {
+                    if(data[i + 3] < 8) continue;
+                    luminance += (0.2126 * data[i]) + (0.7152 * data[i + 1]) + (0.0722 * data[i + 2]);
+                    count++;
+                }
+                if(count > 0) setBgIsDark((luminance / count) < 130);
+            }
+            catch
+            {}
+        };
+        image.onerror = () => { if(!cancelled) setBgIsDark(isDarkFromRgb(style.backgroundColor) ?? false); };
+        image.src = match[1];
+
+        return () => { cancelled = true; };
+    }, [ userProfile.backgroundId ]);
+
+    const bgToneClass = bgIsDark ? 'profile-bg-dark' : 'profile-bg-light';
+
     return (
         <div className="nitro-extended-profile">
             <div className="nitro-extended-profile__top">
                 <div className="nitro-extended-profile__left">
-                    <div className="nitro-extended-profile__identity">
-                        <div className={ `nitro-extended-profile__avatar-shell profile-background ${ infostandBackgroundClass }` }>
+                    <div className={ `nitro-extended-profile__identity ${ bgToneClass }` }>
+                        <div ref={ avatarShellRef } className={ `nitro-extended-profile__avatar-shell profile-background ${ infostandBackgroundClass }` }>
                             <div className={ `nitro-extended-profile__avatar-stand profile-stand ${ infostandStandClass }` } />
                             <LayoutAvatarImageView figure={ userProfile.figure } direction={ 2 } classNames={ [ 'nitro-extended-profile__avatar-image' ] } />
                             <div className={ `nitro-extended-profile__avatar-overlay profile-overlay ${ infostandOverlayClass }` } />

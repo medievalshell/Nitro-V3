@@ -3,7 +3,7 @@ import { FC, useEffect, useState } from 'react';
 import { FaUserCog, FaVolumeDown, FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { DispatchMainEvent, DispatchUiEvent, LocalizeText, SendMessageComposer } from '../../api';
 import { NitroCardContentView, NitroCardHeaderView, NitroCardView, Text } from '../../common';
-import { useCatalogClassicStyle, useCatalogPlaceMultipleItems, useCatalogSkipPurchaseConfirmation, useChatWindow, useMessageEvent, useThemes } from '../../hooks';
+import { useCatalogClassicStyle, useCatalogPlaceMultipleItems, useCatalogSkipPurchaseConfirmation, useChatWindow, useMessageEvent, usePurseClassicStyle, useThemes } from '../../hooks';
 import { classNames } from '../../layout';
 
 export const UserSettingsView: FC<{}> = props =>
@@ -16,6 +16,7 @@ export const UserSettingsView: FC<{}> = props =>
     const [ catalogSkipPurchaseConfirmation, setCatalogSkipPurchaseConfirmation ] = useCatalogSkipPurchaseConfirmation();
     const [ chatWindowEnabled, setChatWindowEnabled ] = useChatWindow();
     const [ catalogClassicStyle, setCatalogClassicStyle ] = useCatalogClassicStyle();
+    const [ purseClassicStyle, setPurseClassicStyle ] = usePurseClassicStyle();
 
     const processAction = (type: string, value?: boolean | number | string) =>
     {
@@ -167,6 +168,10 @@ export const UserSettingsView: FC<{}> = props =>
                     <div className="flex items-center gap-1">
                         <input checked={ catalogClassicStyle } className="form-check-input" type="checkbox" onChange={ event => setCatalogClassicStyle(event.target.checked) } />
                         <Text>{ LocalizeText('memenu.settings.other.catalog.classic.style') }</Text>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <input checked={ purseClassicStyle } className="form-check-input" type="checkbox" onChange={ event => setPurseClassicStyle(event.target.checked) } />
+                        <Text>Borsellino classico</Text>
                     </div>
                 </div>
                 <div className="flex flex-col">

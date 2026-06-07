@@ -1,16 +1,18 @@
 import { CreateLinkEvent, HabboClubLevelEnum } from '@nitrots/nitro-renderer';
 import { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { FaChevronDown, FaLanguage, FaQuestionCircle, FaSignOutAlt } from 'react-icons/fa';
-import { ClearRememberLogin, FriendlyTime, GetConfigurationValue, GetRememberLogin, LocalizeText } from '../../api';
+import { ClearRememberLogin, FriendlyTime, GetConfigurationValue, GetRememberLogin, LocalizeFormattedNumber, LocalizeShortNumber, LocalizeText } from '../../api';
 import { Column, Flex, LayoutCurrencyIcon, Text } from '../../common';
-import { usePurse } from '../../hooks';
+import { usePurse, usePurseClassicStyle } from '../../hooks';
 import purseIcon from '../../assets/images/rightside/purse.gif';
 import { CurrencyView } from './views/CurrencyView';
 import { SeasonalView } from './views/SeasonalView';
+import { HudGroupView } from './views/HudGroupView';
 
 export const PurseView: FC<{}> = props =>
 {
     const { purse = null, hcDisabled = false } = usePurse();
+    const [ purseClassicStyle ] = usePurseClassicStyle();
     const [ isOpen, setIsOpen ] = useState(true);
     const [ isCompact, setIsCompact ] = useState(false);
 
@@ -93,6 +95,54 @@ export const PurseView: FC<{}> = props =>
     }, []);
 
     if (!purse) return null;
+
+    // "Borsellino classico" (toggle in Impostazioni → Generale): layout pulito e
+    // interamente personalizzabile via CSS (inf-purse-* + variabili CSS). Riusa gli
+    // stessi dati del borsellino di default; nessun header/toggle (sempre aperto).
+    if (purseClassicStyle)
+    {
+        const formatAmount = (amount: number) => (currencyDisplayNumberShort ? LocalizeShortNumber(amount) : LocalizeFormattedNumber(amount));
+
+        return (
+            <Column alignItems="end" className="nitro-purse-container" gap={ 0 }>
+                <div className="inf-purse">
+                    <div className="inf-purse__body">
+                        <div className="inf-purse__currencies">
+                            <div className="inf-purse__cur inf-purse__cur--credits">
+                                <Text className="inf-purse__amount" title={ LocalizeFormattedNumber(purse.credits) }>{ formatAmount(purse.credits) }</Text>
+                                <span className="inf-purse__icon"><LayoutCurrencyIcon type={ -1 } /></span>
+                            </div>
+                            { currencyTypes.map(type =>
+                            {
+                                const amount = purse.activityPoints.get(type) || 0;
+
+                                return (
+                                    <div key={ type } className={ `inf-purse__cur inf-purse__cur--c${ type }` }>
+                                        <Text className="inf-purse__amount" title={ LocalizeFormattedNumber(amount) }>{ formatAmount(amount) }</Text>
+                                        <span className="inf-purse__icon"><LayoutCurrencyIcon type={ type } /></span>
+                                    </div>
+                                );
+                            }) }
+                        </div>
+                        <div className="inf-purse__side">
+                            <HudGroupView />
+                            { !hcDisabled &&
+                                <div className="inf-purse__hc" onClick={ event => { event.stopPropagation(); CreateLinkEvent('habboUI/open/hccenter'); } }>
+                                    <LayoutCurrencyIcon type="hc" />
+                                    <Text className="inf-purse__hc-time">{ getClubText }</Text>
+                                </div> }
+                        </div>
+                        <div className="inf-purse__actions">
+                            <button type="button" className="inf-purse__btn inf-purse__btn--translate" title="Google Translate" onClick={ event => { event.stopPropagation(); CreateLinkEvent('translation-settings/toggle'); } }><FaLanguage /></button>
+                            <button type="button" className="inf-purse__btn inf-purse__btn--help" title={ LocalizeText('help.button.name') } onClick={ event => { event.stopPropagation(); CreateLinkEvent('help/show'); } }><FaQuestionCircle /></button>
+                            <button type="button" className="inf-purse__btn inf-purse__btn--settings" title={ LocalizeText('widget.memenu.settings.title') } onClick={ event => { event.stopPropagation(); CreateLinkEvent('user-settings/toggle'); } }><i className="nitro-icon icon-cog" /></button>
+                            <button type="button" className="inf-purse__btn inf-purse__btn--logout" title="Log out" onClick={ handleLogout }><FaSignOutAlt /></button>
+                        </div>
+                    </div>
+                </div>
+            </Column>
+        );
+    }
 
     return (
         <Column alignItems="end" className="nitro-purse-container" gap={ 0 }>

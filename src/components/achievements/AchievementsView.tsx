@@ -64,7 +64,7 @@ export const AchievementsView: FC<{}> = (props) =>
                 onCloseClick={(event) => setIsVisible(false)}
             />
             {selectedCategory && (
-                <div className="relative flex items-center justify-center gap-3 p-1 cursor-pointer container-fluid bg-muted">
+                <div className="relative flex items-center justify-center gap-3 p-1 cursor-pointer container-fluid achievements-detail-header">
                     <div
                         className="bg-[url('@/assets/images/achievements/back-arrow.png')] bg-center no-repeat w-[33px] h-[34px]"
                         onClick={(event) => setSelectedCategoryCode(null)}
