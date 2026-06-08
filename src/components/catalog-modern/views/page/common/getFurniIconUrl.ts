@@ -14,15 +14,23 @@ export const getFurniIconUrl = (product: any, offer: IPurchasableOffer = null): 
 
         if(className?.length)
         {
+            // Varianti colore: classname "base*41" -> icona "base_41_icon.png"
+            // (asterisco -> underscore, colore gia' nel nome, niente %param% extra).
+            const hasColorSuffix = className.indexOf('*') >= 0;
+            const libname = hasColorSuffix ? className.replace(/\*/g, '_') : className;
+
             let param = '';
 
-            if(product.productType === ProductTypeEnum.WALL && product.extraParam?.length)
+            if(!hasColorSuffix)
             {
-                param = `_${ product.extraParam }`;
-            }
-            else if(product.productType === ProductTypeEnum.FLOOR && product.furnitureData?.hasIndexedColor && (product.furnitureData.colorIndex > 0))
-            {
-                param = `_${ product.furnitureData.colorIndex }`;
+                if(product.productType === ProductTypeEnum.WALL && product.extraParam?.length)
+                {
+                    param = `_${ product.extraParam }`;
+                }
+                else if(product.productType === ProductTypeEnum.FLOOR && product.furnitureData?.hasIndexedColor && (product.furnitureData.colorIndex > 0))
+                {
+                    param = `_${ product.furnitureData.colorIndex }`;
+                }
             }
 
             const configuredIconUrl = GetConfigurationValue<string>('furni.asset.icon.url', '');
@@ -30,7 +38,7 @@ export const getFurniIconUrl = (product: any, offer: IPurchasableOffer = null): 
             if(configuredIconUrl?.length)
             {
                 return configuredIconUrl
-                    .replace('%libname%', className)
+                    .replace('%libname%', libname)
                     .replace('%param%', param);
             }
         }

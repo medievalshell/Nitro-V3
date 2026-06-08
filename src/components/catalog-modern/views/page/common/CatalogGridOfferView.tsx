@@ -40,15 +40,24 @@ export const CatalogGridOfferView: FC<CatalogGridOfferViewProps> = props =>
 
             if(className?.length)
             {
+                // Le varianti colore hanno classname tipo "base*41" ma l'icona reale
+                // si chiama "base_41_icon.png" (asterisco -> underscore). Per queste il
+                // colore e' gia' nel nome, quindi NON si aggiunge un %param% separato.
+                const hasColorSuffix = className.indexOf('*') >= 0;
+                const libname = hasColorSuffix ? className.replace(/\*/g, '_') : className;
+
                 let param = '';
 
-                if(product.productType === ProductTypeEnum.WALL && product.extraParam?.length)
+                if(!hasColorSuffix)
                 {
-                    param = `_${ product.extraParam }`;
-                }
-                else if(product.productType === ProductTypeEnum.FLOOR && product.furnitureData?.hasIndexedColor && (product.furnitureData.colorIndex > 0))
-                {
-                    param = `_${ product.furnitureData.colorIndex }`;
+                    if(product.productType === ProductTypeEnum.WALL && product.extraParam?.length)
+                    {
+                        param = `_${ product.extraParam }`;
+                    }
+                    else if(product.productType === ProductTypeEnum.FLOOR && product.furnitureData?.hasIndexedColor && (product.furnitureData.colorIndex > 0))
+                    {
+                        param = `_${ product.furnitureData.colorIndex }`;
+                    }
                 }
 
                 const configuredIconUrl = GetConfigurationValue<string>('furni.asset.icon.url', '');
@@ -56,7 +65,7 @@ export const CatalogGridOfferView: FC<CatalogGridOfferViewProps> = props =>
                 if(configuredIconUrl?.length)
                 {
                     return configuredIconUrl
-                        .replace('%libname%', className)
+                        .replace('%libname%', libname)
                         .replace('%param%', param);
                 }
             }
