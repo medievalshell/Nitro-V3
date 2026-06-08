@@ -35,21 +35,31 @@
 .nitro-catalog .nitro-catalog-classic-offer-panel {
     height: auto !important;
     flex: 0 0 auto !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
 }
 
+/* Box preview compatto: 320x220 fissi (max-width per NON allargarsi a tutta riga) */
 .nitro-catalog .nitro-catalog-classic-offer-preview,
 .nitro-catalog .nitro-catalog-classic-offer-panel > .nitro-catalog-classic-offer-preview {
     position: relative !important;
-    height: 200px !important;
-    width: 300px !important;
-    min-width: 300px !important;
+    flex: 0 0 320px !important;
+    height: 220px !important;
+    width: 320px !important;
+    min-width: 320px !important;
+    max-width: 320px !important;
 }
 
+/* Colonna info a destra del preview: verticale, dall'alto (nome -> quantita -> Compra) */
 .nitro-catalog .nitro-catalog-classic-offer-info {
     display: flex !important;
-    padding-left: 22px !important;
-    padding-right: 14px !important;
-    justify-content: center !important;
+    flex-direction: column !important;
+    padding-left: 4px !important;
+    padding-right: 6px !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    gap: 8px !important;
 }
 
 .nitro-catalog .nitro-catalog-classic-grid-shell {
@@ -100,3 +110,43 @@
 
 /* Show pieno senza preview: niente welcome/intro → la griglia prende tutta la pagina */
 .nitro-catalog .nitro-catalog-classic-welcome { display: none !important; }
+
+/* ============================================================
+   Prezzo (quantita') + Acquisto (Compra): nel modern sono spostati DENTRO la
+   colonna info (a destra del preview) dal componente. Neutralizzo il
+   position:absolute SWF di CatalogClassicView, cosi' scorrono in colonna sotto
+   il nome invece di finire in fondo alla pagina (era questo il layout rotto).
+   ============================================================ */
+.nitro-catalog .nitro-catalog-classic-price-row,
+.nitro-catalog .nitro-catalog-classic-purchase-row {
+    position: static !important;
+    inset: auto !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+}
+.nitro-catalog .nitro-catalog-classic-spinner-slot,
+.nitro-catalog .nitro-catalog-classic-total-price-slot {
+    position: relative !important;
+    inset: auto !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: auto !important;
+}
+/* le azioni acquisto (Compra/regalo) allineate a sinistra nella colonna */
+.nitro-catalog .nitro-catalog-classic-offer-actions {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+}

@@ -89,6 +89,19 @@ export const CatalogLayoutDefaultView: FC<CatalogLayoutProps> = props =>
                                     </div> }
                                 <CatalogLimitedItemWidgetView />
                             </div>
+                            <div className="nitro-catalog-classic-price-row flex items-center gap-2">
+                                <div className="nitro-catalog-classic-spinner-slot">
+                                    <CatalogSpinnerWidgetView />
+                                </div>
+                                <div className="nitro-catalog-classic-total-price-slot">
+                                    <CatalogTotalPriceWidget />
+                                </div>
+                            </div>
+                            <div className="nitro-catalog-classic-purchase-row flex">
+                                <div className="nitro-catalog-classic-offer-actions flex gap-1.5">
+                                    <CatalogPurchaseWidgetView />
+                                </div>
+                            </div>
                         </div>
                     </div> }
 
@@ -105,23 +118,6 @@ export const CatalogLayoutDefaultView: FC<CatalogLayoutProps> = props =>
                     <CatalogHeaderView imageUrl={ currentPage.localization.getImage(0) } /> }
                 <CatalogItemGridWidgetView className="nitro-catalog-classic-grid" columnCount={ 6 } columnMinHeight={ 80 } columnMinWidth={ 55 } />
             </div>
-
-            { currentOffer &&
-                <div className="nitro-catalog-classic-price-row flex items-center justify-between gap-2">
-                    <div className="nitro-catalog-classic-spinner-slot">
-                        <CatalogSpinnerWidgetView />
-                    </div>
-                    <div className="nitro-catalog-classic-total-price-slot">
-                        <CatalogTotalPriceWidget />
-                    </div>
-                </div> }
-
-            { currentOffer &&
-                <div className="nitro-catalog-classic-purchase-row flex items-start justify-end">
-                    <div className="nitro-catalog-classic-offer-actions flex gap-1.5">
-                        <CatalogPurchaseWidgetView />
-                    </div>
-                </div> }
         </div>
     );
 };
