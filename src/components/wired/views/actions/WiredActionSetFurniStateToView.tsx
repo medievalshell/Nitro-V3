@@ -11,7 +11,7 @@ export const WiredActionSetFurniStateToView: FC<{}> = props =>
     const [ directionFlag, setDirectionFlag ] = useState(0);
     const [ positionFlag, setPositionFlag ] = useState(0);
     const [ altitudeFlag, setAltitudeFlag ] = useState(0);
-    const { trigger = null, setIntParams = null } = useWired();
+    const { trigger = null, furniIds = [], setIntParams = null } = useWired();
     const [ furniSource, setFurniSource ] = useState<number>(() =>
     {
         if(trigger?.intData?.length > 4) return trigger.intData[4];
@@ -19,7 +19,13 @@ export const WiredActionSetFurniStateToView: FC<{}> = props =>
         return (trigger?.selectedItems?.length ?? 0) > 0 ? 100 : 0;
     });
 
-    const save = () => setIntParams([ stateFlag, directionFlag, positionFlag, altitudeFlag, furniSource ]);
+    // "Match Furni to Position & State": i criteri vengono applicati ai furni indicati da
+    // furniSource. Con dei furni selezionati la sorgente DEVE essere SELECTED(100): col default
+    // 0 (trigger) l'emu risolve i furni dal trigger e non tocca mai quelli selezionati ->
+    // l'effetto salva ma non esegue. Quindi se ci sono furni selezionati coercizziamo 0 -> 100.
+    const effectiveSource = (((furniIds?.length ?? 0) > 0) && (furniSource === 0)) ? 100 : furniSource;
+
+    const save = () => setIntParams([ stateFlag, directionFlag, positionFlag, altitudeFlag, effectiveSource ]);
 
     useEffect(() =>
     {
@@ -42,7 +48,7 @@ export const WiredActionSetFurniStateToView: FC<{}> = props =>
             hasSpecialInput={ true }
             requiresFurni={ requiresFurni }
             save={ save }
-            footer={ <WiredSourcesSelector showFurni={ true } furniSource={ furniSource } onChangeFurni={ onChangeFurniSource } /> }>
+            footer={ <WiredSourcesSelector showFurni={ true } furniSource={ effectiveSource } onChangeFurni={ onChangeFurniSource } /> }>
             <div className="flex flex-col gap-1">
                 <Text bold>{ LocalizeText('wiredfurni.params.conditions') }</Text>
                 <div className="flex items-center gap-1">
