@@ -17,7 +17,7 @@ export const WiredConditionFurniMatchesSnapshotView: FC<WiredConditionFurniMatch
     const [ positionFlag, setPositionFlag ] = useState(0);
     const [ altitudeFlag, setAltitudeFlag ] = useState(0);
     const [ quantifier, setQuantifier ] = useState(0);
-    const { trigger = null, setIntParams = null } = useWired();
+    const { trigger = null, furniIds = [], setIntParams = null } = useWired();
     const [ furniSource, setFurniSource ] = useState<number>(() =>
     {
         if(trigger?.intData?.length > 4) return trigger.intData[4];
@@ -25,7 +25,12 @@ export const WiredConditionFurniMatchesSnapshotView: FC<WiredConditionFurniMatch
         return (trigger?.selectedItems?.length ?? 0) > 0 ? 100 : 0;
     });
 
-    const save = () => setIntParams([ stateFlag, directionFlag, positionFlag, altitudeFlag, furniSource, quantifier ]);
+    // Come il match-furni effetto: con furni selezionati la sorgente DEVE essere SELECTED(100),
+    // altrimenti l'emu valuta la condizione sui furni del trigger e ignora quelli selezionati
+    // -> la condizione non scatta mai. Coercizza 0 -> 100.
+    const effectiveSource = (((furniIds?.length ?? 0) > 0) && (furniSource === 0)) ? 100 : furniSource;
+
+    const save = () => setIntParams([ stateFlag, directionFlag, positionFlag, altitudeFlag, effectiveSource, quantifier ]);
 
     useEffect(() =>
     {
@@ -62,7 +67,7 @@ export const WiredConditionFurniMatchesSnapshotView: FC<WiredConditionFurniMatch
                             );
                         }) }
                     </div>
-                    <WiredSourcesSelector showFurni={ true } furniSource={ furniSource } onChangeFurni={ onChangeFurniSource } />
+                    <WiredSourcesSelector showFurni={ true } furniSource={ effectiveSource } onChangeFurni={ onChangeFurniSource } />
                 </div>
             }>
             <div className="flex flex-col gap-1">
