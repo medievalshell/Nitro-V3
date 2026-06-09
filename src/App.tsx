@@ -1,6 +1,6 @@
 import { GetAssetManager, GetAvatarRenderManager, GetCommunication, GetConfiguration, GetLocalizationManager, GetRoomEngine, GetRoomSessionManager, GetSessionDataManager, GetSoundManager, GetStage, GetTexturePool, GetTicker, HabboWebTools, LegacyExternalInterface, LoadGameUrlEvent, NitroEventType, NitroLogger, NitroVersion, PrepareRenderer } from '@nitrots/nitro-renderer';
 import { FC, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
-import { ClearRememberLogin, GetRememberLogin, GetUIVersion, SetRememberLogin, StoreRememberLoginFromPayload, persistAccessTokenFromPayload } from './api';
+import { ClearRememberLogin, GetRememberLogin, GetUIVersion, SetRememberLogin, StoreRememberLoginFromPayload, getAccessToken, getAccessTokenExpiresAt, persistAccessTokenFromPayload } from './api';
 import { Base } from './common';
 import { LoadingView } from './components/loading/LoadingView';
 import { LoginView } from './components/login/LoginView';
@@ -251,6 +251,56 @@ export const App: FC<{}> = props =>
         console.warn('[App] tryRememberLogin → cleared remember, returning empty');
 
         return '';
+    }, []);
+
+    // CMS-SSO entry path issues only an SSO ticket (consumed by the websocket),
+    // never a JWT access token — so HTTP APIs that authenticate via Bearer
+    // (custom badges, account settings) replied 401 "Authentication required".
+    // Exchange the still-valid auth_ticket for an access token via /api/auth/sso-token
+    // (Arcturus keeps auth_ticket alive for the whole session, it is NOT consumed on
+    // websocket login) and persist it. Best-effort: a failure must not block hotel entry.
+    const ensureSsoAccessToken = useCallback(async (ssoTicket: string): Promise<void> =>
+    {
+        if(!ssoTicket) return;
+
+        const existing = getAccessToken();
+        const expiresAt = getAccessTokenExpiresAt();
+        const nowSeconds = Math.floor(Date.now() / 1000);
+
+        // Already hold a token with comfortable headroom → nothing to do.
+        if(existing && (!expiresAt || expiresAt > (nowSeconds + 120))) return;
+
+        try
+        {
+            const rawEndpoint = GetConfiguration().getValue<string>('login.sso-token.endpoint', '${api.url}/api/auth/sso-token');
+            const endpoint = GetConfiguration().interpolate(rawEndpoint);
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'NitroSsoToken'
+                },
+                body: JSON.stringify({ ssoTicket })
+            });
+
+            if(!response.ok) return;
+
+            let payload: Record<string, unknown> = {};
+            try
+            {
+                payload = await response.json();
+            }
+            catch
+            {}
+
+            persistAccessTokenFromPayload(payload);
+        }
+        catch(error)
+        {
+            NitroLogger.error('[LoginScreen] SSO access-token exchange failed', error);
+        }
     }, []);
 
     const rotateRememberLogin = useCallback(async (): Promise<void> =>
@@ -550,6 +600,11 @@ export const App: FC<{}> = props =>
                 bumpProgress(20, taskLabel('loading.task.renderer', 'Initializing renderer...'));
 
                 await startWarmup(width, height);
+
+                // Mint a Bearer access token from the SSO ticket so the HTTP APIs
+                // (custom badges, account settings) authenticate. Non-blocking.
+                ensureSsoAccessToken(ssoTicket).catch(error => NitroLogger.error('[LoginScreen] SSO token exchange failed', error));
+
                 bumpProgress(70, taskLabel('loading.task.startsession', 'Starting session...'));
 
                 if(!gameInitPromiseRef.current)
@@ -616,7 +671,7 @@ export const App: FC<{}> = props =>
             if(heartbeatIntervalRef.current !== null) window.clearInterval(heartbeatIntervalRef.current);
             if(rememberRotateIntervalRef.current !== null) window.clearInterval(rememberRotateIntervalRef.current);
         };
-    }, [ prepareTrigger, startWarmup, startRenderer, tryRememberLogin, applySsoTicket, rotateRememberLogin, bumpProgress, taskLabel ]);
+    }, [ prepareTrigger, startWarmup, startRenderer, tryRememberLogin, ensureSsoAccessToken, applySsoTicket, rotateRememberLogin, bumpProgress, taskLabel ]);
 
     return (
         <Base fit overflow="hidden" className={ `nitro-app-root ${ !(window.devicePixelRatio % 1) ? 'image-rendering-pixelated' : '' }` }>
