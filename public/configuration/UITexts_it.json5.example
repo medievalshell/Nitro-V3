@@ -707,24 +707,6 @@
     'chatcmd.client.info':        'Info client',
 
     // ------------------------------------------------------------------------
-    // Mentions
-    // ------------------------------------------------------------------------
-    'mentions.window.title':    'Menzioni',
-    'mentions.window.empty':    'Nessuna menzione',
-    'mentions.window.markall':  'Segna tutte come lette',
-    'mentions.tab.title':       'Menzioni',
-    'mentions.notification':    '%sender% ti ha menzionato in %room%',
-    'mentions.filter.all':      'Tutte',
-    'mentions.filter.unread':   'Non lette',
-    'mentions.filter.direct':   'Dirette',
-    'mentions.filter.room':     'Stanza',
-    'mentions.group.today':     'Oggi',
-    'mentions.group.yesterday': 'Ieri',
-    'mentions.group.older':     'Precedenti',
-    'mentions.type.direct':     'Menzione diretta',
-    'mentions.type.room':       'Menzione di stanza',
-    'mentions.action.goto':     'Vai alla stanza',
-    'mentions.action.remove':   'Rimuovi',
     // Me-menu settings + User account settings window
     // ------------------------------------------------------------------------
     'usersettings.tab.general':                         "Generale",
@@ -732,7 +714,7 @@
     'memenu.settings.other.place.multiple.objects':     "Posiziona più oggetti",
     'memenu.settings.other.skip.purchase.confirmation': "Salta la conferma d'acquisto",
     'memenu.settings.other.enable.chat.window':         "Abilita finestra chat",
-    'memenu.settings.other.catalog.classic.style':      "Catalogo: stile classico",
+    'memenu.settings.other.catalog.classic.style':      "Nuovo stile",
     'usersettings.open.title':                          "Impostazioni utente",
     'usersettings.open.subtitle':                       "Password e account",
     'usersettings.themes.custom':                       "Tema personalizzato",
@@ -790,4 +772,36 @@
     'usersettings.success.password':                    "Password aggiornata con successo.",
     'usersettings.success.email':                       "Email aggiornata con successo.",
     'usersettings.success.username':                    "Nome utente aggiornato. Accedi di nuovo con il tuo nuovo nome.",
+
+    // ------------------------------------------------------------------------
+    // @-mention autocomplete (chat input)
+    // ------------------------------------------------------------------------
+    'mentions.window.title':                            "Menzioni",
+    'mentions.window.empty':                            "Nessuna menzione",
+    'mentions.window.markall':                          "Segna tutte come lette",
+    'mentions.tab.title':                               "Menzioni",
+    'mentions.notification':                            "%sender% ti ha menzionato in %room%",
+    'mentions.filter.all':                              "Tutte",
+    'mentions.filter.unread':                           "Non lette",
+    'mentions.filter.direct':                           "Dirette",
+    'mentions.filter.room':                             "Stanza",
+    'mentions.group.today':                             "Oggi",
+    'mentions.group.yesterday':                         "Ieri",
+    'mentions.group.older':                             "Precedenti",
+    'mentions.type.direct':                             "Menzione diretta",
+    'mentions.type.room':                               "Menzione di stanza",
+    'mentions.action.goto':                             "Vai alla stanza",
+    'mentions.action.remove':                           "Rimuovi",
+    'mentions.alias.description.everyone':              "Tutti nell'hotel",
+    'mentions.alias.description.friends':               "I tuoi amici online",
+    'mentions.alias.description.room':                  "Tutti in questa stanza",
+    // Messenger (offline delivery + typing)
+    // ------------------------------------------------------------------------
+    'messenger.offline.delivered':                      'Inviato mentre eri offline',
+    'messenger.typing':                                 '%FRIEND_NAME% sta scrivendo...',
+	
+	// ------------------------------------------------------------------------
+    // Navigator
+    // ------------------------------------------------------------------------	
+	'navigator.roomsettings.allow_underpass':			'camminare sotto i mobili alti',
 }

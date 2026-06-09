@@ -2,10 +2,13 @@ import { GetSessionDataManager } from '@nitrots/nitro-renderer';
 import { FC, useMemo } from 'react';
 import { GetGroupChatData, LocalizeText, MessengerGroupType, MessengerThread, MessengerThreadChat, MessengerThreadChatGroup } from '../../../../../api';
 import { Base, Flex, LayoutAvatarImageView } from '../../../../../common';
+import { useFriends } from '../../../../../hooks';
+import { resolveAvatarFigure } from '../../friends-list/resolveAvatarFigure';
 
 export const FriendsMessengerThreadGroup: FC<{ thread: MessengerThread, group: MessengerThreadChatGroup }> = props =>
 {
     const { thread = null, group = null } = props;
+    const { getFriend = null } = useFriends();
 
     const groupChatData = useMemo(() => ((group.type === MessengerGroupType.GROUP_CHAT) && GetGroupChatData(group.chats[0].extraData)), [ group ]);
 
@@ -50,7 +53,7 @@ export const FriendsMessengerThreadGroup: FC<{ thread: MessengerThread, group: M
         <Flex fullWidth gap={ 2 } justifyContent={ isOwnChat ? 'end' : 'start' } className={ 'messenger-message-row ' + (isOwnChat ? 'own' : '') }>
             <Base shrink className="message-avatar">
                 { ((group.type === MessengerGroupType.PRIVATE_CHAT) && !isOwnChat) &&
-                    <LayoutAvatarImageView direction={ 2 } figure={ thread.participant.figure } headOnly={ true } /> }
+                    <LayoutAvatarImageView direction={ 2 } figure={ resolveAvatarFigure(getFriend?.(thread.participant.id)?.figure || thread.participant.figure, getFriend?.(thread.participant.id)?.gender ?? thread.participant.gender) } headOnly={ true } /> }
                 { (groupChatData && !isOwnChat) &&
                     <LayoutAvatarImageView direction={ 2 } figure={ groupChatData.figure } headOnly={ true } /> }
             </Base>
@@ -65,7 +68,13 @@ export const FriendsMessengerThreadGroup: FC<{ thread: MessengerThread, group: M
                     {
                         if(!chat.showTranslation)
                         {
-                            return <Base key={ index } className="text-break">{ chat.message }</Base>;
+                            return (
+                                <Base key={ index } className="text-break">
+                                    { chat.message }
+                                    { chat.offlineDelivered &&
+                                        <span className="messenger-offline-tag">{ LocalizeText('messenger.offline.delivered') }</span> }
+                                </Base>
+                            );
                         }
 
                         return (
@@ -83,6 +92,10 @@ export const FriendsMessengerThreadGroup: FC<{ thread: MessengerThread, group: M
                     }) }
                 </Base>
                 <Base className="messenger-message-time">{ group.chats[0].date.toLocaleTimeString() }</Base>
+                { isOwnChat && (group.type === MessengerGroupType.PRIVATE_CHAT) && (group.chats[group.chats.length - 1].type === MessengerThreadChat.CHAT) &&
+                    <Base className={ 'messenger-message-status ' + ((group.chats[group.chats.length - 1].status === MessengerThreadChat.READ) ? 'read' : '') }>
+                        { (group.chats[group.chats.length - 1].status === MessengerThreadChat.READ) ? '✓✓' : '✓' }
+                    </Base> }
             </Base>
             { isOwnChat &&
                 <Base shrink className="message-avatar">

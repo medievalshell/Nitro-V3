@@ -707,24 +707,6 @@
     'chatcmd.client.info':        'Client info',
 
     // ------------------------------------------------------------------------
-    // Mentions
-    // ------------------------------------------------------------------------
-    'mentions.window.title':    'Mentions',
-    'mentions.window.empty':    'No mentions',
-    'mentions.window.markall':  'Mark all as read',
-    'mentions.tab.title':       'Mentions',
-    'mentions.notification':    '%sender% mentioned you in %room%',
-    'mentions.filter.all':      'All',
-    'mentions.filter.unread':   'Unread',
-    'mentions.filter.direct':   'Direct',
-    'mentions.filter.room':     'Room',
-    'mentions.group.today':     'Today',
-    'mentions.group.yesterday': 'Yesterday',
-    'mentions.group.older':     'Earlier',
-    'mentions.type.direct':     'Direct mention',
-    'mentions.type.room':       'Room mention',
-    'mentions.action.goto':     'Go to room',
-    'mentions.action.remove':   'Remove',
     // Me-menu settings + User account settings window
     // ------------------------------------------------------------------------
     'usersettings.tab.general':                         "General",
@@ -732,7 +714,7 @@
     'memenu.settings.other.place.multiple.objects':     "Place multiple objects",
     'memenu.settings.other.skip.purchase.confirmation': "Skip purchase confirmation",
     'memenu.settings.other.enable.chat.window':         "Enable chat window",
-    'memenu.settings.other.catalog.classic.style':      "Catalog: classic style",
+    'memenu.settings.other.catalog.classic.style':      "New style",
     'usersettings.open.title':                          "User settings",
     'usersettings.open.subtitle':                       "Password & account",
     'usersettings.themes.custom':                       "Custom theme",
@@ -790,4 +772,36 @@
     'usersettings.success.password':                    "Password updated successfully.",
     'usersettings.success.email':                       "Email updated successfully.",
     'usersettings.success.username':                    "Username updated. Please log in again with your new name.",
+
+    // ------------------------------------------------------------------------
+    // @-mention autocomplete (chat input)
+    // ------------------------------------------------------------------------
+    'mentions.window.title':                            "Mentions",
+    'mentions.window.empty':                            "No mentions",
+    'mentions.window.markall':                          "Mark all as read",
+    'mentions.tab.title':                               "Mentions",
+    'mentions.notification':                            "%sender% mentioned you in %room%",
+    'mentions.filter.all':                              "All",
+    'mentions.filter.unread':                           "Unread",
+    'mentions.filter.direct':                           "Direct",
+    'mentions.filter.room':                             "Room",
+    'mentions.group.today':                             "Today",
+    'mentions.group.yesterday':                         "Yesterday",
+    'mentions.group.older':                             "Earlier",
+    'mentions.type.direct':                             "Direct mention",
+    'mentions.type.room':                               "Room mention",
+    'mentions.action.goto':                             "Go to room",
+    'mentions.action.remove':                           "Remove",
+    'mentions.alias.description.everyone':              "Everyone in the hotel",
+    'mentions.alias.description.friends':               "Your online friends",
+    'mentions.alias.description.room':                  "Everyone in this room",
+    // Messenger (offline delivery + typing)
+    // ------------------------------------------------------------------------
+    'messenger.offline.delivered':                      'Sent while you were offline',
+    'messenger.typing':                                 '%FRIEND_NAME% is typing...',
+	
+	// ------------------------------------------------------------------------
+    // Navigator
+    // ------------------------------------------------------------------------	
+	'navigator.roomsettings.allow_underpass':			'walking under tall furniture',
 }

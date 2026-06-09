@@ -2,7 +2,7 @@ import { CrackableDataType, CreateLinkEvent, FurnitureFloorUpdateEvent, GetRoomE
 import { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { FaCrosshairs, FaTimes } from 'react-icons/fa';
 import { GrFormNextLink, GrRotateLeft, GrRotateRight } from 'react-icons/gr';
-import { AvatarInfoFurni, GetGroupInformation, LocalizeText, SendMessageComposer } from '../../../../../api';
+import { AvatarInfoFurni, GetGroupInformation, LocalizeText, SendMessageComposer, GetConfigurationValue } from '../../../../../api';
 import { Button, Column, Flex, LayoutBadgeImageView, LayoutCurrencyIcon, LayoutLimitedEditionCompactPlateView, LayoutRarityLevelView, LayoutRoomObjectImageView, Text, UserProfileIconView } from '../../../../../common';
 import { useHasPermission, useMessageEvent, useNitroEvent, useRareValues, useRoom, useWiredTools } from '../../../../../hooks';
 import { NitroInput } from '../../../../../layout';
@@ -18,6 +18,56 @@ const PICKUP_MODE_NONE: number = 0;
 const PICKUP_MODE_EJECT: number = 1;
 const PICKUP_MODE_FULL: number = 2;
 
+function getValidRoomObjectDirection(roomObject: any, isPositive: boolean)
+{
+    if(!roomObject || !roomObject.model) return 0;
+
+    let allowedDirections: number[] = [];
+
+    if(roomObject.type === 'monster_plant')
+    {
+        allowedDirections = roomObject.model.getValue('pet_allowed_directions');
+    }
+    else
+    {
+        allowedDirections = roomObject.model.getValue('furniture_allowed_directions');
+    }
+
+    let direction = roomObject.getDirection().x;
+
+    if(allowedDirections && allowedDirections.length)
+    {
+        let index = allowedDirections.indexOf(direction);
+
+        if(index < 0)
+        {
+            index = 0;
+
+            for(let i = 0; i < allowedDirections.length; i++)
+            {
+                if(direction <= allowedDirections[i]) break;
+
+                index++;
+            }
+
+            index = index % allowedDirections.length;
+        }
+
+        if(isPositive)
+        {
+            index = (index + 1) % allowedDirections.length;
+        }
+        else
+        {
+            index = (index - 1 + allowedDirections.length) % allowedDirections.length;
+        }
+
+        direction = allowedDirections[index];
+    }
+
+    return direction;
+}
+
 export const InfoStandWidgetFurniView: FC<InfoStandWidgetFurniViewProps> = props =>
 {
     const { avatarInfo = null, onClose = null } = props;
@@ -26,7 +76,9 @@ export const InfoStandWidgetFurniView: FC<InfoStandWidgetFurniViewProps> = props
     const isModerator = useHasPermission('acc_anyroomowner');
     const { getValue: getRareValue } = useRareValues();
     const rareValue = useMemo(() => (avatarInfo ? getRareValue(avatarInfo.spriteId) : null), [ avatarInfo, getRareValue ]);
-
+    const descriptionsEnabled = GetConfigurationValue<boolean>('furni.descriptions.enabled', true);
+    const itemLocationEnabled = GetConfigurationValue<boolean>('furni.location.enabled', true);
+    const itemLocationRequireAccess = GetConfigurationValue<boolean>('furni.location.require.access', true);
     const [ pickupMode, setPickupMode ] = useState(0);
     const [ canMove, setCanMove ] = useState(false);
     const [ canRotate, setCanRotate ] = useState(false);
@@ -77,56 +129,6 @@ export const InfoStandWidgetFurniView: FC<InfoStandWidgetFurniViewProps> = props
 
         SendMessageComposer(new UpdateFurniturePositionComposer(avatarInfo.id, newX, newY, Math.round(newZ * 10000), newDirection));
     }, [ avatarInfo ]);
-
-    function getValidRoomObjectDirection(roomObject: any, isPositive: boolean)
-    {
-        if(!roomObject || !roomObject.model) return 0;
-
-        let allowedDirections: number[] = [];
-
-        if(roomObject.type === 'monster_plant')
-        {
-            allowedDirections = roomObject.model.getValue('pet_allowed_directions');
-        }
-        else
-        {
-            allowedDirections = roomObject.model.getValue('furniture_allowed_directions');
-        }
-
-        let direction = roomObject.getDirection().x;
-
-        if(allowedDirections && allowedDirections.length)
-        {
-            let index = allowedDirections.indexOf(direction);
-
-            if(index < 0)
-            {
-                index = 0;
-
-                for(let i = 0; i < allowedDirections.length; i++)
-                {
-                    if(direction <= allowedDirections[i]) break;
-
-                    index++;
-                }
-
-                index = index % allowedDirections.length;
-            }
-
-            if(isPositive)
-            {
-                index = (index + 1) % allowedDirections.length;
-            }
-            else
-            {
-                index = (index - 1 + allowedDirections.length) % allowedDirections.length;
-            }
-
-            direction = allowedDirections[index];
-        }
-
-        return direction;
-    }
 
     const handleHeightChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) =>
     {
@@ -214,7 +216,6 @@ export const InfoStandWidgetFurniView: FC<InfoStandWidgetFurniViewProps> = props
         {
             canMove = true;
             canRotate = !avatarInfo.isWallItem;
-
             if(avatarInfo.roomControllerLevel >= RoomControllerLevel.MODERATOR) godMode = true;
         }
 
@@ -421,7 +422,11 @@ export const InfoStandWidgetFurniView: FC<InfoStandWidgetFurniViewProps> = props
             if(key === 'offsetX') value = String(x);
             else if(key === 'offsetY') value = String(y);
             else if(key === 'offsetZ') value = String(z);
-            else if(key === 'scale') { value = String(scale); hasScale = true; }
+            else if(key === 'scale')
+            {
+                value = String(scale);
+                hasScale = true;
+            }
 
             clone[i] = value;
             map.set(key, value);
@@ -548,6 +553,11 @@ export const InfoStandWidgetFurniView: FC<InfoStandWidgetFurniViewProps> = props
                             <hr className="m-0 bg-[#0003] border-0 opacity-[.5] h-px" />
                         </div>
                     }
+                    { (avatarInfo.description && descriptionsEnabled) &&
+                        <Column gap={ 1 }>
+                            <Text fullWidth wrap textBreak variant="white" small>{ avatarInfo.description }</Text>
+                            <hr className="m-0 bg-[#0003] border-0 opacity-[.5] h-px" />
+                        </Column> }
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1">
                             { showOwnerProfileIcon && <UserProfileIconView userId={ avatarInfo.ownerId } /> }
@@ -598,7 +608,7 @@ export const InfoStandWidgetFurniView: FC<InfoStandWidgetFurniViewProps> = props
                                     <Text underline variant="white">{ groupName }</Text>
                                 </Flex>
                             </> }
-                        { (itemLocation.x > -1) &&
+                        { ((itemLocation.x > -1) && itemLocationEnabled && (!itemLocationRequireAccess || canMove)) &&
                             <>
                                 <hr className="m-0 bg-[#0003] border-0 opacity-[.5] h-px" />
                                 <div className="flex items-center gap-1 min-w-0">
@@ -638,6 +648,20 @@ export const InfoStandWidgetFurniView: FC<InfoStandWidgetFurniViewProps> = props
                                             })() }</Text>
                                         </div>
                                     </div> }
+                                { isModerator &&
+                                    <button
+                                        className="w-full text-white text-xs bg-[#1e7295] hover:bg-[#1a617f] border border-[#ffffff33] rounded px-2 py-1 cursor-pointer transition-colors"
+                                        onClick={ () =>
+                                        {
+                                            const roomObject = GetRoomEngine().getRoomObject(roomSession.roomId, avatarInfo.id, avatarInfo.isWallItem ? RoomObjectCategory.WALL : RoomObjectCategory.FLOOR);
+                                            const typeId = roomObject?.model?.getValue(RoomObjectVariable.FURNITURE_TYPE_ID);
+
+                                            CreateLinkEvent('furni-editor/show');
+
+                                            if(typeId) window.dispatchEvent(new CustomEvent('furni-editor:open', { detail: { spriteId: typeId } }));
+                                        } }>
+                                        Edit Furni
+                                    </button> }
                                 { (!avatarInfo.isWallItem && canMove) &&
                                     <>
                                         <button
@@ -645,20 +669,6 @@ export const InfoStandWidgetFurniView: FC<InfoStandWidgetFurniViewProps> = props
                                             onClick={ () => setDropdownOpen(!dropdownOpen) }>
                                             { dropdownOpen ? `${LocalizeText('widget.furni.present.close')} Buildtools` : `${LocalizeText('navigator.roomsettings.doormode.open')} Buildtools` }
                                         </button>
-                                        { isModerator &&
-                                            <button
-                                                className="w-full text-white text-xs bg-[#1e7295] hover:bg-[#1a617f] border border-[#ffffff33] rounded px-2 py-1 cursor-pointer transition-colors"
-                                                onClick={ () =>
-                                                {
-                                                    const roomObject = GetRoomEngine().getRoomObject(roomSession.roomId, avatarInfo.id, avatarInfo.isWallItem ? RoomObjectCategory.WALL : RoomObjectCategory.FLOOR);
-                                                    const typeId = roomObject?.model?.getValue(RoomObjectVariable.FURNITURE_TYPE_ID);
-
-                                                    CreateLinkEvent('furni-editor/show');
-
-                                                    if(typeId) window.dispatchEvent(new CustomEvent('furni-editor:open', { detail: { spriteId: typeId } }));
-                                                } }>
-                                                Edit Furni
-                                            </button> }
                                         { dropdownOpen &&
                                             <div className="flex gap-[4px] w-full">
                                                 { /* Left panel: position + rotation */ }

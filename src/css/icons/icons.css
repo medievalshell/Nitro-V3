@@ -36,6 +36,13 @@
     height: 36px;
 }
 
+.nitro-icon.icon-mentions {
+    background-image: url("@/assets/images/toolbar/icons/mentions.png");
+    background-size: contain;
+    width: 36px;
+    height: 32px;
+}
+
 .nitro-icon.icon-buildersclub {
     background-image: url("@/assets/images/toolbar/icons/buildersclub.png");
     background-size: contain;
@@ -85,17 +92,21 @@
 }
 
 .nitro-icon.icon-fortune-wheel {
-    background-image: url("@/assets/images/toolbar/icons/game.png");
-    width: 44px;
-    height: 25px;
-    filter: hue-rotate(300deg) saturate(1.6);
+    background-image: url("@/assets/images/toolbar/icons/fortune-wheel.svg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 40px;
+    height: 40px;
 }
 
 .nitro-icon.icon-housekeeping {
-    background-image: url("@/assets/images/toolbar/icons/modtools.png");
-    width: 29px;
-    height: 34px;
-    filter: hue-rotate(140deg);
+    background-image: url("@/assets/images/toolbar/icons/housekeeping.svg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 40px;
+    height: 40px;
 }
 
 .nitro-icon.icon-furnieditor {
@@ -225,13 +236,6 @@
 
 .nitro-icon.icon-message {
     background-image: url("@/assets/images/toolbar/icons/message.png");
-    width: 36px;
-    height: 32px;
-}
-
-.nitro-icon.icon-mentions {
-    background-image: url("@/assets/images/toolbar/icons/mentions.png");
-    background-size: contain;
     width: 36px;
     height: 32px;
 }

@@ -3,9 +3,10 @@ import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChatMessageTypeEnum, GetClubMemberLevel, GetConfigurationValue, LocalizeText, RoomWidgetUpdateChatInputContentEvent } from '../../../../api';
 import { Text } from '../../../../common';
-import { useChatCommandSelector, useChatInputWidget, useRoom, useSessionInfo, useUiEvent } from '../../../../hooks';
+import { useCatalogClassicStyle, useChatCommandSelector, useChatInputWidget, useChatMentions, useRoom, useSessionInfo, useUiEvent } from '../../../../hooks';
 import { ChatInputCommandSelectorView } from './ChatInputCommandSelectorView';
 import { ChatInputEmojiSelectorView } from './ChatInputEmojiSelectorView';
+import { ChatInputMentionSelectorView } from './ChatInputMentionSelectorView';
 import { ChatInputStyleSelectorView } from './ChatInputStyleSelectorView';
 
 export const ChatInputView: FC<{}> = props =>
@@ -16,6 +17,14 @@ export const ChatInputView: FC<{}> = props =>
     const { roomSession = null } = useRoom();
     const inputRef = useRef<HTMLInputElement>(null);
     const { isVisible: commandSelectorVisible, filteredCommands, selectedIndex, setSelectedIndex, moveUp, moveDown, selectCurrent, close: closeCommandSelector } = useChatCommandSelector(chatValue);
+
+    // The "New style" user-setting (memenu.settings.other.catalog.classic.style)
+    // drives BOTH the catalog layout and the mention-picker chrome:
+    //   false (default) = Habbo old-school NitroCard cardstock look
+    //   true            = flat minimalist gray look
+    const [ newStyle ] = useCatalogClassicStyle();
+
+    const mention = useChatMentions(chatValue, setChatValue, inputRef, commandSelectorVisible);
 
     const chatModeIdWhisper = useMemo(() => LocalizeText('widgets.chatinput.mode.whisper'), []);
     const chatModeIdShout = useMemo(() => LocalizeText('widgets.chatinput.mode.shout'), []);
@@ -149,7 +158,6 @@ export const ChatInputView: FC<{}> = props =>
                     return;
                 case 'Tab':
                     event.preventDefault();
-                    // fall through
                 case 'NumpadEnter':
                 case 'Enter': {
                     const selected = selectCurrent();
@@ -165,6 +173,34 @@ export const ChatInputView: FC<{}> = props =>
                 case 'Escape':
                     event.preventDefault();
                     closeCommandSelector();
+                    return;
+            }
+        }
+
+        if(mention.visible)
+        {
+            switch(event.key)
+            {
+                case 'ArrowUp':
+                    event.preventDefault();
+                    mention.moveUp();
+                    return;
+                case 'ArrowDown':
+                    event.preventDefault();
+                    mention.moveDown();
+                    return;
+                case 'Tab':
+                case 'NumpadEnter':
+                case 'Enter':
+                    if(mention.applyCurrent())
+                    {
+                        event.preventDefault();
+                        return;
+                    }
+                    break;
+                case 'Escape':
+                    event.preventDefault();
+                    mention.cancel();
                     return;
             }
         }
@@ -194,12 +230,16 @@ export const ChatInputView: FC<{}> = props =>
                 return;
         }
 
-    }, [ floodBlocked, inputRef, chatModeIdWhisper, anotherInputHasFocus, setInputFocus, checkSpecialKeywordForInput, sendChatValue, commandSelectorVisible, moveUp, moveDown, selectCurrent, closeCommandSelector ]);
+    }, [ floodBlocked, inputRef, chatModeIdWhisper, anotherInputHasFocus, setInputFocus, checkSpecialKeywordForInput, sendChatValue, commandSelectorVisible, moveUp, moveDown, selectCurrent, closeCommandSelector, mention, chatValue ]);
 
     useUiEvent<RoomWidgetUpdateChatInputContentEvent>(RoomWidgetUpdateChatInputContentEvent.CHAT_INPUT_CONTENT, event =>
     {
         switch(event.chatMode)
         {
+            case RoomWidgetUpdateChatInputContentEvent.TEXT:
+                setChatValue(event.userName);
+                inputRef.current?.focus();
+                return;
             case RoomWidgetUpdateChatInputContentEvent.WHISPER: {
                 setChatValue(`${ chatModeIdWhisper } ${ event.userName } `);
                 return;
@@ -289,6 +329,15 @@ export const ChatInputView: FC<{}> = props =>
                             setChatValue(':' + cmd.key + ' '); inputRef.current?.focus();
                         } }
                         onHover={ setSelectedIndex }
+                        newStyle={ newStyle }
+                    /> }
+                { mention.visible && !commandSelectorVisible &&
+                    <ChatInputMentionSelectorView
+                        suggestions={ mention.suggestions }
+                        selectedIndex={ mention.selectedIndex }
+                        onSelect={ mention.apply }
+                        onHover={ mention.setSelectedIndex }
+                        newStyle={ newStyle }
                     /> }
                 <div className="flex-1 items-center input-sizer">
                     { !floodBlocked &&

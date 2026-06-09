@@ -1,8 +1,8 @@
 import { MentionReceivedEvent, MentionsListEvent, RequestMentionsComposer } from '@nitrots/nitro-renderer';
 import { useCallback, useEffect } from 'react';
-import { GetConfigurationValue, IMentionEntry, LocalizeText, NotificationBubbleType, PlaySound, SendMessageComposer } from '../../api';
+import { GetConfigurationValue, IMentionEntry, PlaySound, SendMessageComposer } from '../../api';
 import { useMessageEvent } from '../events';
-import { useNotificationActions } from '../notification';
+import { useNotification } from '../notification/useNotification';
 import { addMention, setMentions } from './mentionsStore';
 
 // Dedicated mention chime served from nitro-assets/sounds/<sample>.mp3.
@@ -10,7 +10,7 @@ const MENTION_SOUND_SAMPLE = 'mentions_notification';
 
 export const useMentionMessages = (): void =>
 {
-    const { showSingleBubble } = useNotificationActions();
+    const { showMentionBubble } = useNotification();
 
     const onMentionsList = useCallback((event: MentionsListEvent) =>
     {
@@ -20,6 +20,7 @@ export const useMentionMessages = (): void =>
             mentionId: m.mentionId,
             senderId: m.senderId,
             senderUsername: m.senderUsername,
+            senderFigure: m.senderFigure,
             roomId: m.roomId,
             roomName: m.roomName,
             message: m.message,
@@ -39,6 +40,7 @@ export const useMentionMessages = (): void =>
             mentionId: m.mentionId,
             senderId: m.senderId,
             senderUsername: m.senderUsername,
+            senderFigure: m.senderFigure,
             roomId: m.roomId,
             roomName: m.roomName,
             message: m.message,
@@ -51,14 +53,10 @@ export const useMentionMessages = (): void =>
 
         if(GetConfigurationValue<boolean>('mentions_ui.sound', true)) PlaySound(MENTION_SOUND_SAMPLE);
 
-        showSingleBubble(
-            LocalizeText('mentions.notification', [ 'sender', 'room' ], [ entry.senderUsername, entry.roomName ]),
-            NotificationBubbleType.INFO,
-            null,
-            'mentions/toggle',
-            entry.senderUsername
-        );
-    }, [ showSingleBubble ]);
+        // Surface it through the client's standard notification stream, using the
+        // dedicated mention bubble layout (avatar + actions).
+        showMentionBubble(entry);
+    }, [ showMentionBubble ]);
 
     useMessageEvent<MentionsListEvent>(MentionsListEvent, onMentionsList);
     useMessageEvent<MentionReceivedEvent>(MentionReceivedEvent, onMentionReceived);
