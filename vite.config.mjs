@@ -164,6 +164,7 @@ export default defineConfig({
             '@nitrots/sound': resolve(rendererRoot, 'packages/sound/src/index.ts'),
             '@nitrots/utils/src': resolve(rendererRoot, 'packages/utils/src'),
             '@nitrots/utils': resolve(rendererRoot, 'packages/utils/src/index.ts'),
+            'pixi.js/advanced-blend-modes': resolve(rendererRoot, 'node_modules/pixi.js/lib/advanced-blend-modes/index.mjs'),
             'pixi.js': resolve(rendererRoot, 'node_modules/pixi.js'),
             'pixi-filters': resolve(rendererRoot, 'node_modules/pixi-filters'),
             'howler': resolve(rendererRoot, 'node_modules/howler'),
