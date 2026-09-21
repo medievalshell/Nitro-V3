@@ -5,8 +5,9 @@ import { defineConfig } from 'vite';
 import sirv from 'sirv';
 
 const legacyRendererRoot = resolve(__dirname, '..', 'renderer');
+const stagingRendererRoot = resolve(__dirname, '..', 'octane-renderer-sync');
 const currentRendererRoot = resolve(__dirname, '..', 'Nitro_Render_V3');
-const rendererRoot = existsSync(currentRendererRoot) ? currentRendererRoot : legacyRendererRoot;
+const rendererRoot = [stagingRendererRoot, currentRendererRoot, legacyRendererRoot].find(existsSync) ?? legacyRendererRoot;
 
 // Game assets live outside the repo, in a sibling directory next to Nitro-V3.
 // They are NOT placed under public/ on purpose: with ~177k files a symlink

@@ -7,11 +7,11 @@ import {
     MarkMentionsReadComposer,
     RemoveLinkEventTracker,
     RoomSessionEvent
-} from '@nitrots/nitro-renderer';
+} from '@octane/renderer';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FC, useEffect, useState } from 'react';
 import { GetConfigurationValue, SendMessageComposer } from '../api';
-import { useMentionMessages, useNitroEventReducer } from '../hooks';
+import { useMentionMessages, useOctaneEventReducer } from '../hooks';
 import { markAllRead } from '../hooks/mentions/mentionsStore';
 import { AchievementsView } from './achievements/AchievementsView';
 import { GoogleAdsView } from './ads/GoogleAdsView';
@@ -41,8 +41,8 @@ import { InventoryView } from './inventory/InventoryView';
 import { MentionsView } from './mentions';
 import { ModToolsView } from './mod-tools/ModToolsView';
 import { NavigatorView } from './navigator/NavigatorView';
-import { NitrobubbleHiddenView } from './nitrobubblehidden/NitrobubbleHiddenView';
-import { NitropediaView } from './nitropedia/NitropediaView';
+import { OctanebubbleHiddenView } from './octanebubblehidden/OctanebubbleHiddenView';
+import { OctanepediaView } from './octanepedia/OctanepediaView';
 import { ExternalPluginLoader } from './plugins/ExternalPluginLoader';
 import { RadioView } from './radio/RadioView';
 import { RareValuesView } from './rare-values/RareValuesView';
@@ -74,7 +74,7 @@ export const MainView: FC<{}> = (props) => {
     // session's roomId so a stale ENDED for a previous session is
     // ignored — only an ENDED matching the tracked session (or when
     // no session is active) is honored.
-    const { landingViewVisible } = useNitroEventReducer<{ sessionId: number | null; landingViewVisible: boolean }, RoomSessionEvent>(
+    const { landingViewVisible } = useOctaneEventReducer<{ sessionId: number | null; landingViewVisible: boolean }, RoomSessionEvent>(
         [RoomSessionEvent.CREATED, RoomSessionEvent.ENDED],
         (state, event) => {
             if (event.type === RoomSessionEvent.CREATED) {
@@ -208,7 +208,7 @@ export const MainView: FC<{}> = (props) => {
             <AvatarEffectsView />
             <AchievementsView />
             <NavigatorView />
-            <NitrobubbleHiddenView />
+            <OctanebubbleHiddenView />
             <InventoryView />
             <CatalogView />
             <FriendsView />
@@ -222,7 +222,7 @@ export const MainView: FC<{}> = (props) => {
             <GroupForumView />
             <CameraWidgetView />
             <HelpView />
-            <NitropediaView />
+            <OctanepediaView />
             <GuideToolView />
             <HcCenterView />
             <CampaignView />

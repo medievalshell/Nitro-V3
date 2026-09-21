@@ -31,16 +31,19 @@
                 "./src/*"
             ],
             "pixi.js": [
+                "../octane-renderer-sync/node_modules/pixi.js",
                 "../Octane-Renderer/node_modules/pixi.js",
                 "../octane-renderer/node_modules/pixi.js",
                 "../renderer/node_modules/pixi.js"
             ],
             "@octane/renderer": [
+                "../octane-renderer-sync/index.ts",
                 "../Octane-Renderer/index.ts",
                 "../octane-renderer/index.ts",
                 "../renderer/index.ts"
             ],
             "@octane/*": [
+                "../octane-renderer-sync/packages/*/src/index.ts",
                 "../Octane-Renderer/packages/*/src/index.ts",
                 "../octane-renderer/packages/*/src/index.ts",
                 "../renderer/packages/*/src/index.ts"

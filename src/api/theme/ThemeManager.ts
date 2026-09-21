@@ -1,5 +1,5 @@
-import { NitroLogger } from '@nitrots/nitro-renderer';
-import { GetConfigurationValue } from '../nitro';
+import { OctaneLogger } from '@octane/renderer';
+import { GetConfigurationValue } from '../octane';
 
 // ---------------------------------------------------------------------------
 //  Custom theme ecosystem (graphics-only, runtime-loaded).
@@ -56,7 +56,7 @@ export const FetchThemeIndex = async (): Promise<ThemeInfo[]> =>
     }
     catch(error)
     {
-        NitroLogger.warn('[ThemeManager] index.json non caricabile, nessun tema custom', error);
+        OctaneLogger.warn('[ThemeManager] index.json non caricabile, nessun tema custom', error);
 
         return [];
     }
@@ -83,7 +83,7 @@ export const FetchThemeManifest = async (themeId: string): Promise<ThemeManifest
     }
     catch(error)
     {
-        NitroLogger.warn(`[ThemeManager] manifest non valido per tema "${ themeId }" -> fallback default`, error);
+        OctaneLogger.warn(`[ThemeManager] manifest non valido per tema "${ themeId }" -> fallback default`, error);
 
         return null;
     }
@@ -113,7 +113,7 @@ export const ApplyThemePieces = (themeId: string, pieces: ThemePiece[]): void =>
         // Per-piece fallback: a broken piece removes itself, leaving the default.
         link.onerror = () =>
         {
-            NitroLogger.warn(`[ThemeManager] pezzo tema rotto "${ themeId }/${ piece.file }" -> fallback default`);
+            OctaneLogger.warn(`[ThemeManager] pezzo tema rotto "${ themeId }/${ piece.file }" -> fallback default`);
             link.remove();
         };
 

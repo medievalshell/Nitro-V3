@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useBetween } from 'use-between';
 import { ApplyThemePieces, ClearTheme, FetchThemeIndex, FetchThemeManifest, GetConfigurationValue, LocalStorageKeys, ThemeInfo, ThemeManifest } from '../../api';
 import { useLocalStorage } from '../useLocalStorage';
 
@@ -10,7 +9,7 @@ import { useLocalStorage } from '../useLocalStorage';
 //  - enabledPieces[themeId]: which graphic pieces of that theme are active
 //    (checkboxes). If absent, defaults to ui-config `theme.default.pieces`
 //    (when on the default theme) or ALL pieces.
-const useThemesState = () =>
+export const useThemes = () =>
 {
     const [ activeThemeId, setActiveThemeId ] = useLocalStorage<string>(LocalStorageKeys.THEME_ACTIVE, GetConfigurationValue<string>('theme.default', ''));
     const [ enabledPieces, setEnabledPieces ] = useLocalStorage<Record<string, string[]>>(LocalStorageKeys.THEME_PIECES, {});
@@ -104,5 +103,3 @@ const useThemesState = () =>
 
     return { themes, activeThemeId, manifest, activeEnabled, loaded, selectTheme, togglePiece };
 };
-
-export const useThemes = () => useBetween(useThemesState);

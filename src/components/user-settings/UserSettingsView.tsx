@@ -1,8 +1,8 @@
-import { AddLinkEventTracker, CreateLinkEvent, ILinkEventTracker, NitroSettingsEvent, RemoveLinkEventTracker, UserSettingsCameraFollowComposer, UserSettingsEvent, UserSettingsOldChatComposer, UserSettingsRoomInvitesComposer, UserSettingsSoundComposer } from '@nitrots/nitro-renderer';
+import { AddLinkEventTracker, CreateLinkEvent, ILinkEventTracker, OctaneSettingsEvent, RemoveLinkEventTracker, UserSettingsCameraFollowComposer, UserSettingsEvent, UserSettingsOldChatComposer, UserSettingsRoomInvitesComposer, UserSettingsSoundComposer } from '@octane/renderer';
 import { FC, useEffect, useState } from 'react';
 import { FaUserCog, FaVolumeDown, FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { DispatchMainEvent, DispatchUiEvent, LocalizeText, SendMessageComposer } from '../../api';
-import { Button, NitroCardContentView, NitroCardHeaderView, NitroCardView, Text } from '../../common';
+import { Button, OctaneCardContentView, OctaneCardHeaderView, OctaneCardView, Text } from '../../common';
 import { useCatalogPlaceMultipleItems, useCatalogSkipPurchaseConfirmation, useChatWindow, useMessageEvent, useThemes } from '../../hooks';
 import { classNames } from '../../layout';
 
@@ -21,7 +21,7 @@ export const UserSettingsView: FC<{}> = props =>
     const [ isVisible, setIsVisible ] = useState(false);
     const [ section, setSection ] = useState<SettingsSection>(null);
     const [ activeTab, setActiveTab ] = useState<'general' | 'themes'>('general');
-    const [ userSettings, setUserSettings ] = useState<NitroSettingsEvent>(null);
+    const [ userSettings, setUserSettings ] = useState<OctaneSettingsEvent>(null);
     const { themes, activeThemeId, manifest, activeEnabled, selectTheme, togglePiece } = useThemes();
     const [ catalogPlaceMultipleObjects, setCatalogPlaceMultipleObjects ] = useCatalogPlaceMultipleItems();
     const [ catalogSkipPurchaseConfirmation, setCatalogSkipPurchaseConfirmation ] = useCatalogSkipPurchaseConfirmation();
@@ -86,7 +86,7 @@ export const UserSettingsView: FC<{}> = props =>
     useMessageEvent<UserSettingsEvent>(UserSettingsEvent, event =>
     {
         const parser = event.getParser();
-        const settingsEvent = new NitroSettingsEvent();
+        const settingsEvent = new OctaneSettingsEvent();
 
         settingsEvent.volumeSystem = parser.volumeSystem;
         settingsEvent.volumeFurni = parser.volumeFurni;
@@ -157,9 +157,9 @@ export const UserSettingsView: FC<{}> = props =>
                 : LocalizeText('widget.memenu.settings.title');
 
     return (
-        <NitroCardView className="user-settings-window min-w-0 max-w-[calc(100vw-16px)] max-h-[calc(100vh-16px)]" theme="primary-slim" uniqueKey="user-settings">
-            <NitroCardHeaderView headerText={ headerText } onCloseClick={ event => processAction('close_view') } />
-            <NitroCardContentView className="text-black">
+        <OctaneCardView className="user-settings-window min-w-0 max-w-[calc(100vw-16px)] max-h-[calc(100vh-16px)]" theme="primary-slim" uniqueKey="user-settings">
+            <OctaneCardHeaderView headerText={ headerText } onCloseClick={ event => processAction('close_view') } />
+            <OctaneCardContentView className="text-black">
                 { (section === null) &&
                     <div className="flex items-center gap-1 mb-2 border-b border-black/10 pb-1">
                         <button type="button" onClick={ () => setActiveTab('general') } className={ classNames('px-3 py-1 rounded text-xs font-bold cursor-pointer transition-colors', activeTab === 'general' ? 'bg-[#1e7295] text-white' : 'bg-black/5 hover:bg-black/10') }>{ LocalizeText('usersettings.tab.general') }</button>
@@ -275,7 +275,7 @@ export const UserSettingsView: FC<{}> = props =>
                     <div className="flex pt-2 mt-1 border-t border-black/10">
                         <Button variant="secondary" onClick={ event => processAction('close_view') }>{ localizeWithFallback('generic.back', 'Indietro') }</Button>
                     </div> }
-            </NitroCardContentView>
-        </NitroCardView>
+            </OctaneCardContentView>
+        </OctaneCardView>
     );
 };
