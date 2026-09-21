@@ -1,0 +1,245 @@
+/* --- Modern Crimson Theme — pezzo "cards" (finestre / NitroCard). --- */
+
+.nitro-card-shell:not(.nitro-wired) {
+    /* Main tint voor de rand, subtielere gloed voor klasse */
+    border-color: #D95D5D !important; 
+    box-shadow: 0 0 14px rgba(217, 93, 93, 0.2), 0 8px 22px rgba(0, 0, 0, 0.8) !important;
+}
+
+.nitro-card-shell:not(.nitro-wired) .nitro-card-header-shell {
+    /* Ons Zwart (1C1917) als achtergrond met een heel subtiel verloop */
+    background: linear-gradient(180deg, #262321 0%, #1c1917 100%) !important;
+    border-color: #262321 !important;
+    /* De sterke Extra tint (EC253F) als onderlijn voor de header */
+    border-bottom-color: #EC253F !important; 
+}
+
+/* --- ENHANCED SHINE EFFECT --- */
+.nitro-card-title,
+.nitro-card-title span {
+    color: #ffffff !important;
+    font-weight: 700 !important; /* Maakt de glow krachtiger */
+    letter-spacing: 0.8px !important; /* Geeft een premium uitstraling */
+    text-transform: uppercase; /* Zorgt voor een strakke look */
+    
+    /* Gelaagde shadows voor een dieper 'shine' effect */
+    text-shadow: 
+        0 0 5px #FFA1AD,      /* Inner soft glow */
+        0 0 10px #FFA1AD,     /* Outer bloom */
+        0 0 20px #ec253f,     /* Deep crimson aura */
+        0 2px 2px rgba(0,0,0,0.8) !important; /* Drop shadow voor contrast */
+}
+.nitro-card-tab-item-active {
+    /* De sterke tint (EC253F) voor de actieve status */
+    box-shadow: inset 0 -2px 0 #EC253F !important;
+}
+/* --- FIX: Tab-systeem stijlen --- */
+
+/* De container waarin de tabs staan */
+.nitro-card-tabs-shell {
+    background-color: #1c1917 !important; /* Basis donker */
+    border-bottom: 1px solid #333333 !important; /* Subtiele scheidingslijn */
+}
+
+/* De individuele tabs (inactief) */
+.nitro-card-tab-item {
+    background-color: #262321 !important; /* Iets lichter voor diepte */
+    color: #999999 !important;
+    transition: all 0.2s ease-in-out;
+    border: none !important;
+}
+.nitro-card-tab-item span { color : #F5F5F4 !important;}
+/* Hover effect voor tabs */
+.nitro-card-tab-item:hover {
+    background-color: #33302e !important;
+    color: #ffffff !important;
+}
+.nitro-card-content-shell span { color : #D6D3D1 !important;}
+
+.bg-amber-50 {
+    background-color: #57534D !important;
+}
+:root {
+    /* Vervang de standaard lichte blauwe kleur door jouw donkere thema kleur */
+    --color-sky-50: #2a2624 !important; 
+    
+    /* Mocht je ook 'to-sky-xxx' classes gebruiken, kun je die hier ook aanpassen */
+    --color-sky-100: #3a3532 !important;
+}
+.text-\[\#000\], .text-\[\#000000\] {
+    color: #E7E5E4 !important;
+}
+.bg-gray-100 {
+    background-color: #79716B !important;
+}
+
+
+.nitro-inventory-window .nitro-inventory-body {
+background-color: #79716B !important;
+
+}
+
+.nitro-inventory-window .nitro-inventory-btn-place {
+    /* Kleur & Rand */
+    background: linear-gradient(to bottom, #9f1239, #4c0519) !important;
+    border: 1px solid #be123c !important;
+    color: #ffffff !important;
+    
+    /* Interactie / Clickable gevoel */
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Hover: Iets lichter */
+.nitro-inventory-window .nitro-inventory-btn-place:hover {
+    filter: brightness(1.2);
+}
+
+/* Active: "Indrukken" effect */
+.nitro-inventory-window .nitro-inventory-btn-place:active {
+    transform: scale(0.95);
+    filter: brightness(0.8);
+}
+/* --- FIX: Forceer de rode kleur ook tijdens hover --- */
+
+/* De hover status moet nu expliciet de groene kleur blokkeren */
+.nitro-inventory-window .nitro-inventory-btn-place:hover {
+    background: linear-gradient(to bottom, #be123c, #881337) !important;
+    border: 1px solid #e11d48 !important;
+    color: #ffffff !important;
+    cursor: pointer;
+}
+.mention-row {background-color : #44403B !important;}
+
+
+.nitro-card-content-shell span,
+.nitro-card-content-shell select {
+    color: #D6D3D1 !important;
+}
+
+
+
+
+.text-[#2a3a42] { color : #292524 !important; }
+
+/* De actieve tab (DE CRIMSON LOOK) */
+.nitro-card-tab-item-active {
+    background-color: #ec253f !important; /* Jouw Crimson Rood */
+    color: #ffffff !important;
+    font-weight: bold;
+    /* Een subtiele gloed naar binnen om het te laten 'poppen' */
+    box-shadow: inset 0 -2px 0 #bc1f34 !important; 
+}
+
+/* Zorg dat iconen (SVG en Images) in de tabs wit kleuren */
+.nitro-card-tab-item svg,
+.nitro-card-tab-item img {
+    filter: brightness(0) invert(1); /* Maakt zwart/gekleurde iconen wit */
+    opacity: 0.8;
+}
+
+/* Actieve tab iconen altijd 100% helder */
+.nitro-card-tab-item-active svg,
+.nitro-card-tab-item-active img {
+    opacity: 1;
+}
+/* --- FIX: Zoekbalk & Zoekknop (Crimson Theme) --- */
+
+/* 1. De zoekbalk (Input veld) */
+.form-control {
+    background-color: #262321 !important;
+    border: 1px solid #333333 !important;
+    color: #ffffff !important;
+    border-radius: 4px !important;
+    padding: 0.5rem !important;
+}
+
+/* Placeholder tekst wat lichter maken voor betere leesbaarheid */
+.form-control::placeholder {
+    color: #888888 !important;
+}
+
+/* 2. De zoekknop (De div die zich als button gedraagt) */
+/* We targeten de classes specifiek om de blauwe kleur te overschrijven */
+.flex.w-full.gap-1 > div[class*="bg-[#1e7295]"] {
+    background-color: #ec253f !important;
+    border-color: #ec253f !important;
+    color: #ffffff !important;
+}
+
+/* Hover effect voor de zoekknop */
+.flex.w-full.gap-1 > div[class*="hover:bg-[#1a617f]"]:hover {
+    background-color: #c91e36 !important;
+    border-color: #c91e36 !important;
+}
+
+/* 3. Het icoon in de knop wit forceren */
+.flex.w-full.gap-1 > div svg {
+    color: #ffffff !important;
+}
+/* --- FIX: Inventory UI (Crimson Theme) --- */
+
+/* 1. Header Title (Gebruik je 'shine' effect ook hier) */
+.nitro-inventory-window .nitro-card-title {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    text-shadow: 0 0 5px #FFA1AD, 0 2px 2px rgba(0,0,0,0.8) !important;
+}
+
+/* 2. Inventory Tabs Styling */
+.nitro-inventory-tabs-shell {
+    background-color: #1c1917 !important;
+    border-bottom: 1px solid #333333 !important;
+}
+
+.nitro-inventory-tabs-shell .nitro-card-tab-item {
+    background-color: #262321 !important;
+    color: #cccccc !important;
+    transition: all 0.2s ease;
+    border: none !important;
+}
+
+.nitro-inventory-tabs-shell .nitro-card-tab-item:hover {
+    background-color: #33302e !important;
+    color: #ffffff !important;
+}
+
+.nitro-inventory-tabs-shell .nitro-card-tab-item.nitro-card-tab-item-active {
+    background-color: #ec253f !important; /* Crimson */
+    color: #ffffff !important;
+    box-shadow: inset 0 -2px 0 #bc1f34 !important;
+}
+
+/* 3. Fix: Hardcoded zwarte tekst overschrijven */
+.nitro-inventory-body,
+.nitro-inventory-body div {
+    color: #ffffff !important;
+}
+
+/* 4. Fix: Zorg dat icons in de tabs wit zijn */
+.nitro-inventory-tabs-shell .nitro-inventory-tab-icon {
+    color: #ffffff !important;
+    margin-right: 6px;
+    display: flex;
+    align-items: center;
+}
+
+/* 5. Zorg dat de inventory body achtergrond matcht */
+.nitro-inventory-window {
+    background-color: #1c1917 !important;
+}
+.nitro-inventory-tab-label {
+color : #E7E5E4!important;
+}
+.nitro-inventory-body {
+    background-color: #D6D3D1!important; /* Crimson */
+color : #E7E5E4!important;
+
+}
+
+.mention-tag.mention-tag--self {
+    color: #4a3300;
+    background: #d95d5d !important;
+    box-shadow: 0 0 14px rgba(217, 93, 93, 0.2), 0 8px 22px rgba(0, 0, 0, 0.8) !important;
+}
+

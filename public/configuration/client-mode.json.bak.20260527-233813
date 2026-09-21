@@ -1,0 +1,8 @@
+{
+    "distObfuscationEnabled": false,
+    "secureAssetsEnabled": false,
+    "secureApiEnabled": false,
+    "apiBaseUrl": "https://hippiehotel.nl",
+    "plainConfigBaseUrl": "https://hippiehotel.nl/nitro-staging-config/",
+    "plainGamedataBaseUrl": "https://hippiehotel.nl/nitro-staging-assets/gamedata/"
+}

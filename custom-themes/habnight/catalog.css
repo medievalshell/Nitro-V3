@@ -1,0 +1,277 @@
+/* --- CLEAN DARK THEME (Borderless & Unified) --- */
+
+/* 1. Verwijder alle storende randen en dwing de donkere kleur af */
+.nitro-card-shell,
+.nitro-catalog,
+.nitro-card-content-shell,
+.nitro-catalog .bg-light,
+.nitro-chat-input-container,
+.nitro-card-header-shell {
+    background-color: #1c1917 !important;
+    border: none !important; /* Randen verwijderd */
+    box-shadow: none !important; /* Geen storende gloed */
+}
+
+/* --- FIX: Specifieke chat-bubble leesbaarheid --- */
+
+/* 1. De bubbel zelf (achtergrond licht, tekst zwart) */
+.messenger-message-bubble {
+    color: #000000 !important; /* Hier wordt je tekst zwart */
+    background-color: #ffffff !important; /* Zorgt dat de bubbel leesbaar blijft */
+    border: 1px solid #cccccc !important;
+}
+
+/* 2. Zorg dat de rest van de card-tekst WEL wit blijft (om je donkere thema te behouden) */
+.nitro-card-title, 
+.text-dark {
+    color: #ffffff !important;
+}
+.text-gray-700
+ {
+    color: #E7E5E4 !important;
+}
+
+.text-\[\#33424c\],
+.text-\[\#2f6f95\],
+.text-black\/70  {
+    color: #FFE2E2 !important;
+}
+/* 3. Input velden wit houden voor contrast */
+.messenger-input-row input {
+    color: #ffffff !important;
+}
+/* 3. Catalogus zijbalk (Rail) - Strak houden */
+.nitro-catalog .group\/rail {
+    background-color: #1c1917 !important;
+    border-right: 1px solid #2a2a2a !important; /* Heel subtiel, bijna onzichtbaar */
+}
+
+/* 4. Actieve items - Hier gebruiken we de rode tint als accent */
+.nitro-catalog .bg-card-grid-item-active {
+    background-color: #ec253f !important; /* Subtieler accent */
+    color: #ffffff !important;
+}
+
+.bg-gradient-to-r,
+.from-emerald-50,
+.to-transparent { background-image: none !important; /* Verwijdert de gradient */
+    background-color: #9f1239 !important; /* Vaste kleur */
+    border: 1px solid #be123c !important;
+    color: #ffffff !important;}
+
+
+/* 5. Zoekbalk & Chat input - Minimalistisch */
+.nitro-catalog input,
+.nitro-chat-input-container {
+    background-color: #262321 !important; /* Iets lichter zwart om diepte te geven */
+    border-radius: 6px !important;
+    color: #ffffff !important;
+}
+
+/* 6. Knoppen - Modern en vlak */
+/* Targett nu UITSLUITEND elementen met de class 'bg-[#1e7295]' */
+[class*="bg-[#1e7295]"],
+button.bg-white,
+button.bg-primary,
+.bg-\[\#6f8f39\],
+.bg-\[\#1E7295\] {
+    background-color: #d95d5d !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 4px !important;
+}
+
+.bg-\[\#5f7d2f\] { background-color: #FF6467 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 4px !important;
+ }
+
+button:hover {
+    background-color: #ec253f !important;
+}
+
+/* 7. Catalogus Content - Nu volledig donker */
+.nitro-card-content-shell {
+    background-color: #1c1917 !important;
+}
+/* --- FIX: Classic Navigation Sidebar (Donker maken) --- */
+
+/* 1. De container van de navigatie lijst */
+.nitro-catalog-classic-navigation-list,
+.nitro-catalog-classic-navigation-node {
+    background-color: #1c1917 !important;
+    border-right: none !important;
+}
+
+/* 2. De individuele items in de navigatie */
+.nitro-catalog-classic-navigation-item {
+    background-color: #1c1917 !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+
+/* 3. Het actieve item (de rode highlight) */
+.nitro-catalog-classic-navigation-item.is-active {
+    background-color: #ec253f !important; /* Jouw rode accent */
+    color: #ffffff !important;
+    border-radius: 4px !important;
+}
+
+/* 4. Hover effect voor items */
+.nitro-catalog-classic-navigation-item:hover {
+    background-color: #262321 !important; /* Subtiele donkergrijze hover */
+}
+
+/* 5. Tekst en Labels */
+.nitro-catalog-classic-navigation-label {
+    color: #ffffff !important;
+}
+
+/* 6. Iconen & Carets (pijltjes) wit maken */
+.nitro-catalog-classic-navigation-caret,
+.nitro-catalog-classic-navigation-icon {
+    color: #ffffff !important;
+}
+
+/* Zorg dat de lijst container zelf ook donker is */
+div[class*="w-[120px]"][class*="border-r-2"] {
+    background-color: #1c1917 !important;
+    border-right: none !important;
+}
+/* --- FIX: Catalogus Toolbar / Header --- */
+
+/* 1. De achtergrond van de hele balk donker maken */
+.bg-card-tab-item, 
+.nitro-catalog .bg-card-tab-item {
+    background-color: #1c1917 !important;
+    border-bottom: 1px solid #2a2a2a !important; /* Subtiele overgang */
+}
+
+/* 2. Tekstkleuren in de balk forceren naar wit */
+.text-dark, 
+.text-gray-600 {
+    color: #ffffff !important;
+}
+
+/* 3. De zoekbalk fixen */
+input.bg-white {
+    background-color: #1c1917 !important; /* Donkere achtergrond */
+    border: 1px solid #333333 !important; /* Subtiele rand */
+    color: #ffffff !important;           /* Witte tekst */
+}
+
+/* 4. De Admin knop fixen */
+button.bg-card-grid-item {
+    background-color: #262321 !important; /* Iets lichter donkergrijs */
+    color: #ffffff !important;
+    border: 1px solid #333333 !important;
+}
+
+/* 5. Hover effect op de Admin knop (jouw Crimson kleur) */
+button.bg-card-grid-item:hover {
+    background-color: #ec253f !important;
+    border-color: #ec253f !important;
+    color: #ffffff !important;
+}
+
+/* 6. Iconen in de balk (zoals het vergrootglas) wit maken */
+.text-muted {
+    color: #cccccc !important;
+}
+
+/* 7. Hover effect tekst "Furnis" */
+.hover\:text-primary:hover {
+    color: #ec253f !important; /* Crimson bij hover */
+}
+/* --- FIX: Sidebar Selectie & Hover (Donker & Crimson) --- */
+
+/* 1. Forceer de actieve status (wanneer je op een item klikt) */
+.nitro-catalog-classic-navigation-item.is-active,
+.nitro-catalog-classic-navigation-item:active,
+.bg-card-grid-item-active {
+    background-color: #ec253f !important; /* Jouw Crimson Rood */
+    color: #ffffff !important;
+    border-left: 3px solid #ffa1ad !important; /* Subtiel accent aan de zijkant */
+}
+
+/* 2. Forceer de hover status (als je eroverheen gaat met je muis) */
+.nitro-catalog-classic-navigation-item:hover,
+.hover\:bg-card-grid-item-active:hover {
+    background-color: #d95d5d !important; /* Iets donkerder rood voor contrast */
+    color: #ffffff !important;
+    border-radius: 4px !important;
+}
+
+/* 3. Zorg dat de tekstkleur altijd wit blijft bij selectie */
+.nitro-catalog-classic-navigation-item.is-active span,
+.nitro-catalog-classic-navigation-item:hover span {
+    color: #ffffff !important;
+}
+/* --- FIX: Sub-list navigatie (De blauwe selectie verwijderen) --- */
+
+/* 1. Achtergrond van de sub-lijst donker maken */
+.nitro-catalog-classic-navigation-list, 
+.nitro-catalog-classic-navigation-node {
+    background-color: #1c1917 !important;
+}
+
+/* 2. De items in de lijst stylen (achtergrond en tekst) */
+.nitro-catalog-classic-navigation-item {
+    background-color: #1c1917 !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+
+/* 3. DE BELANGRIJKSTE FIX: De actieve (blauwe) status overschrijven */
+.nitro-catalog-classic-navigation-item.is-active,
+.nitro-catalog-classic-navigation-item.is-selected {
+    background-color: #ec253f !important; /* Jouw Crimson Rood */
+    color: #ffffff !important;
+    border: none !important;
+}
+
+/* 4. Tekst en icoontjes in de sub-lijst wit maken */
+.nitro-catalog-classic-navigation-label,
+.nitro-catalog-classic-navigation-caret {
+    color: #ffffff !important;
+}
+
+/* 5. Hover effect voor de sub-lijst items */
+.nitro-catalog-classic-navigation-item:hover {
+    background-color: #262321 !important; /* Subtiel donkergrijs bij hover */
+    color: #ffffff !important;
+}
+/* --- FIX: Definitieve overschrijving actieve status --- */
+
+/* Forceer de Crimson kleur bij actieve/geselecteerde items in de navigatie */
+.nitro-catalog-classic-navigation-item.is-active,
+.nitro-catalog-classic-navigation-item.is-selected {
+    background-color: #ec253f !important; /* Jouw Crimson Rood */
+    color: #ffffff !important;           /* Witte tekst */
+    border-color: #ec253f !important;
+    border-radius: 4px !important;
+}
+
+/* Zorg dat de tekst ook wit blijft in de actieve status */
+.nitro-catalog-classic-navigation-item.is-active span,
+.nitro-catalog-classic-navigation-item.is-selected span {
+    color: #ffffff !important;
+}
+
+/* Verwijder eventuele blauwe achtergrondkleuren die via andere klassen binnenkomen */
+.nitro-catalog-classic-navigation-item {
+    background-color: transparent !important;
+}
+
+.text-\[\#1f2d34\] {
+    color: #FFC9C9 !important;
+}
+
+.nitro-card-shell:not(.nitro-wired) .nitro-card-content-shell {
+color : #FF6467 !important;
+}
+
+.text-zinc-500 {
+    color: #E7E5E4 !important;
+}

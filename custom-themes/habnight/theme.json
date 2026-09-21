@@ -1,0 +1,10 @@
+{
+  "name": "HabNight",
+  "author": "Nexxus",
+  "pieces": [
+    { "id": "cards",     "name": "General",   "file": "cards.css" },
+    { "id": "chat",      "name": "Chat",              "file": "chat.css" },
+    { "id": "toolbar",   "name": "Toolbar",           "file": "toolbar.css" },
+    { "id": "catalog",   "name": "Shop",          "file": "catalog.css" }
+  ]
+}

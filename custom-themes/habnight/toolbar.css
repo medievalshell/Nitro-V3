@@ -1,0 +1,6 @@
+
+.nitro-toolbar,
+[class*="toolbar-container"] {
+    background: linear-gradient(180deg, #1e1e1e 0%, #000000 100%) !important;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.6) !important;
+}

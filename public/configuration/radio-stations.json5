@@ -1,0 +1,42 @@
+{
+    // Hotel radio stations. Each entry is just a streaming URL the client plays
+    // with the HTML5 Audio API — add / remove / reorder stations here, no rebuild
+    // needed (the client fetches this file at runtime). JSON5 so // comments and
+    // trailing commas are allowed.
+    //
+    // Fields:
+    //   id    - unique key (string)
+    //   name  - label shown in the radio panel
+    //   genre - optional subtitle
+    //   url   - the audio stream URL (mp3/aac/ogg Icecast or Shoutcast)
+    //   logo  - optional image URL shown next to the station
+    //
+    // The station list can later be moved to the CMS (website_settings) so it is
+    // editable from the admin without touching this file.
+    stations: [
+        {
+            id: 'hippie',
+            name: 'Hippiehotel Radio',
+            genre: 'Hotel Radio',
+            url: 'https://stream-152.zeno.fm/rsswgzom9hvvv',
+        },
+        {
+            id: 'groovesalad',
+            name: 'Groove Salad',
+            genre: 'Chillout / Ambient',
+            url: 'https://ice1.somafm.com/groovesalad-128-mp3',
+        },
+        {
+            id: 'lush',
+            name: 'Lush',
+            genre: 'Vocal / Mellow',
+            url: 'https://ice1.somafm.com/lush-128-mp3',
+        },
+        {
+            id: 'dronezone',
+            name: 'Drone Zone',
+            genre: 'Ambient Space',
+            url: 'https://ice1.somafm.com/dronezone-128-mp3',
+        },
+    ],
+}

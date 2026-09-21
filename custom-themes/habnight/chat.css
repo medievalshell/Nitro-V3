@@ -1,0 +1,164 @@
+/* --- Modern Crimson Theme (Nitro) --- */
+
+/* 1. Chat Container - De basis */
+.nitro-chat-input-container {
+    background-color: #1c1917 !important; /* Ons Zwart */
+    border: 1px solid #d95d5d !important; /* Main tint als strakke lijn */
+    border-radius: 12px !important;      /* Mooie ronde hoeken */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    transition: all 0.3s ease !important;
+}
+
+/* 2. Wanneer je klikt om te typen (Focus) */
+.nitro-chat-input-container:focus-within {
+    border-color: #ec253f !important;    /* Extra tint (sterker rood) bij focus */
+    box-shadow: 0 0 10px rgba(236, 37, 63, 0.3) !important;
+}
+
+/* 3. De input tekst zelf */
+.nitro-chat-input-container input {
+    color: #ffffff !important;           /* Wit voor goed contrast */
+    background: transparent !important;
+}
+
+/* 4. Placeholder kleur */
+.nitro-chat-input-container input::placeholder {
+    color: #E7E5E4 !important;           /* Zachte roze extra tint voor placeholder */
+    opacity: 0.7 !important;
+}
+
+/* 5. De icoontjes (Smiley/Chatstyles) */
+.nitro-chat-input-container .cursor-pointer,
+.nitro-chat-input-container .chatstyles-anchor {
+    color: #ffa1ad !important;           /* Zachte roze tint */
+    transition: color 0.2s ease !important;
+}
+
+/* Hover effect op icoontjes */
+.nitro-chat-input-container .cursor-pointer:hover,
+.nitro-chat-input-container .chatstyles-anchor:hover {
+    color: #ec253f !important;           /* Kleurt naar sterker rood bij hover */
+}
+/* --- FIX: Friends Window Dark Theme --- */
+
+/* 1. Achtergrond en tekstkleur Friends venster */
+.nitro-friends .nitro-card-content-shell {
+    background-color: #1c1917 !important;
+    color: #ffffff !important;
+}
+
+/* 2. Accordion Headers (De grijze balken) */
+.nitro-friends .nitro-card-accordion-set-header {
+    background-color: #262321 !important;
+    border-bottom: 1px solid #333333 !important;
+}
+
+/* Forceer witte tekst in de headers (overschrijft de hardcoded #000000) */
+.nitro-friends .nitro-card-accordion-set-header div[class*="text-[#000000]"] {
+    color: #ffffff !important;
+}
+
+/* 3. Friends List Items */
+.nitro-friends .friends-list-item {
+    background-color: #57534D !important;
+    color: #ffffff !important;
+}
+
+.nitro-friends .friends-list-name {
+    color: #ffffff !important;
+}
+
+/* 4. Tabbladen (Chips) */
+.nitro-friends .friends-group-chip {
+    background-color: #262321 !important;
+    color: #cccccc !important;
+    border: 1px solid #333333 !important;
+}
+
+.nitro-friends .friends-group-chip.active {
+    background-color: #ec253f !important;
+    color: #ffffff !important;
+    border-color: #ec253f !important;
+}
+
+/* 5. Buttons (Add/Ignore/Accept/Decline) */
+/* Primary Buttons (Crimson) */
+.nitro-friends [class*="bg-[#1e7295]"] {
+    background-color: #ec253f !important;
+    border-color: #ec253f !important;
+    color: #ffffff !important;
+}
+
+/* Secondary/Danger Buttons (Donker grijs/rood) */
+.nitro-friends [class*="bg-[#a81a12]"] {
+    background-color: #4a1c1c !important;
+    border-color: #7a2626 !important;
+    color: #ffffff !important;
+}
+
+/* Button Hover states */
+.nitro-friends [class*="hover:bg-[#1a617f]"]:hover {
+    background-color: #c91e36 !important;
+}
+
+.nitro-friends [class*="hover:bg-[#8f160f]"]:hover {
+    background-color: #632222 !important;
+}
+
+/* 6. Toolbar (Select all) */
+.nitro-friends .friends-list-toolbar-link {
+    color: #ec253f !important;
+    cursor: pointer;
+}
+/* --- FIX: Toolbar "Select all" link --- */
+
+.friends-list-toolbar-link {
+    color: #cccccc !important; /* Rustige, leesbare kleur */
+    cursor: pointer;
+    font-size: 11px;
+    transition: color 0.2s ease;
+}
+
+.friends-list-toolbar-link:hover {
+    color: #ec253f !important; /* Crimson accent bij hover */
+    text-decoration: underline;
+}
+
+/* Zorg dat de toolbar zelf niet de achtergrond van de items overneemt */
+.friends-list-toolbar {
+    background-color: #1c1917 !important;
+    color: #ffffff;
+}
+
+
+
+.messenger-card .chat-messages .messenger-message-bubble {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: pre-wrap;
+    background: #fff;
+    border: 1px solid #00000014;
+    border-radius: 3px;
+    max-width: 200px;
+    padding: 4px 7px;
+    line-height: 1.35;
+    position: relative;
+    box-shadow: inset 1px 1px #ffffffb3;
+    color: #111 !important;
+    font-size: 13px !important;
+}
+
+
+.messenger-card .chat-messages .messenger-message-bubble {
+    color: #1C1917!important;
+    border: 1px solid #00000014;
+    border-radius: 3px;
+    box-shadow: inset 1px 1px #ffffffb3;
+}
+
+.mention-row-msg  {
+color : #E7E5E4 !important;
+}
+.mention-row-name {
+color : #D1D5DC !important;
+}
