@@ -2,7 +2,7 @@ import { FC, useEffect, useState } from 'react';
 import { LocalizeText, WiredFurniType } from '../../../../api';
 import { Text } from '../../../../common';
 import { useWired } from '../../../../hooks';
-import { NitroInput } from '../../../../layout';
+import { OctaneInput } from '../../../../layout';
 import { WiredHandItemField } from '../WiredHandItemField';
 import { CLICKED_USER_SOURCE_VALUE, WiredSourceOption, WiredSourcesSelector } from '../WiredSourcesSelector';
 import { WiredActionBaseView } from './WiredActionBaseView';
@@ -82,10 +82,17 @@ export const WiredActionBotGiveHandItemView: FC<{}> = (props) => {
             {botSource === 100 && (
                 <div className="flex flex-col gap-1">
                     <Text bold>{LocalizeText('wiredfurni.params.bot.name')}</Text>
-                    <NitroInput maxLength={32} type="text" value={botName} onChange={(event) => setBotName(event.target.value)} />
+                    <OctaneInput maxLength={32} type="text" value={botName} onChange={(event) => setBotName(event.target.value)} />
                 </div>
             )}
-            <WiredHandItemField handItemId={handItemId} onChange={setHandItemId} showCopyButton={true} />
+            {/* Official BOT_GIVE_HAND_ITEM code list includes 1126/1127/1128 (§_-32b§.as DEFAULT_CODES);
+                the condition/selector variants intentionally do NOT, so pass them per-view. */}
+            <WiredHandItemField
+                handItemId={handItemId}
+                extraItemIds={[1126, 1127, 1128]}
+                onChange={setHandItemId}
+                showCopyButton={true}
+            />
         </WiredActionBaseView>
     );
 };

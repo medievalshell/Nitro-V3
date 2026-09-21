@@ -31,9 +31,9 @@ import {
     RoomObjectVariable,
     RoomPreviewer,
     Vector3d
-} from '@nitrots/nitro-renderer';
+} from '@octane/renderer';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useBetween } from 'use-between';
+import { registerSharedHook, useSharedHook } from '@/state/useSharedHook';
 import {
     BuilderFurniPlaceableStatus,
     CatalogPage,
@@ -69,10 +69,13 @@ import {
     CatalogPurchaseSoldOutEvent,
     InventoryFurniAddedEvent
 } from '../../events';
-import { useMessageEvent, useNitroEvent, useUiEvent } from '../events';
+import { useConnectionState, useMessageEvent, useOctaneEvent, useUiEvent } from '../events';
 import { useNotification } from '../notification';
 import {
     buildCatalogNodeTree,
+    createCatalogIndexPrewarmController,
+    createCatalogIndexRequestCoordinator,
+    createCatalogPageRequestCorrelation,
     findNodeById,
     findNodeByName,
     getNodesByOfferIdFromMap,
@@ -81,7 +84,8 @@ import {
     RoomControllerLevel,
     RoomObjectCategory,
     RoomObjectType,
-    resolveBuilderFurniPlaceableStatus
+    resolveBuilderFurniPlaceableStatus,
+    restoreCatalogActivePath
 } from './useCatalog.helpers';
 import { useCatalogPlaceMultipleItems } from './useCatalogPlaceMultipleItems';
 import { useCatalogSkipPurchaseConfirmation } from './useCatalogSkipPurchaseConfirmation';
@@ -89,17 +93,10 @@ import { useCatalogSkipPurchaseConfirmation } from './useCatalogSkipPurchaseConf
 const DUMMY_PAGE_ID_FOR_OFFER_SEARCH = -12345678;
 const DRAG_AND_DROP_ENABLED = true;
 
-// Internal singleton store — held together by `useBetween` so every
-// public filter below sees the same listeners + state. Do NOT export
-// this directly; consumers must go through the filters or the
-// deprecated `useCatalog` shim. The previous 1100-line monolith
-// exposed everything via `useCatalog`; the three filters below
-// (`useCatalogData` / `useCatalogUiState` / `useCatalogActions`)
-// shrink the surface each consumer subscribes to, which lets the
-// React Compiler memoize and avoids unrelated re-renders.
 const useCatalogStore = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [isBusy, setIsBusy] = useState(false);
+    const [catalogLoadError, setCatalogLoadError] = useState<'timeout' | null>(null);
     const [pageId, setPageId] = useState(-1);
     const [previousPageId, setPreviousPageId] = useState(-1);
     const [currentType, setCurrentType] = useState(CatalogType.NORMAL);
@@ -118,6 +115,7 @@ const useCatalogStore = () => {
         extraParamRequired: false,
         previewStuffData: null
     });
+    const [giftReceiver, setGiftReceiver] = useState<string>(null);
     const [objectMoverRequested, setObjectMoverRequested] = useState(false);
     const [catalogPlaceMultipleObjects, setCatalogPlaceMultipleObjects] = useCatalogPlaceMultipleItems();
     const [catalogSkipPurchaseConfirmation, setCatalogSkipPurchaseConfirmation] = useCatalogSkipPurchaseConfirmation();
@@ -134,25 +132,28 @@ const useCatalogStore = () => {
     const [builderPlacementAllowedInCurrentRoom, setBuilderPlacementAllowedInCurrentRoom] = useState(false);
     const [builderTrialRoomHideConfirmed, setBuilderTrialRoomHideConfirmed] = useState(false);
     const resolvedOffersByProductKey = useRef<Map<string, IPurchasableOffer>>(new Map());
+    const pageRequestCorrelation = useRef(createCatalogPageRequestCorrelation());
     const { simpleAlert = null, showConfirm = null } = useNotification();
     const requestedPage = useRef(new RequestedPage());
+    const connectionState = useConnectionState();
+    const catalogIndexRequests = useRef<ReturnType<typeof createCatalogIndexRequestCoordinator>>(null);
+    const catalogIndexPrewarm = useRef<ReturnType<typeof createCatalogIndexPrewarmController>>(null);
 
-    const resetState = useCallback(() => {
-        setPageId(-1);
-        setPreviousPageId(-1);
-        setRootNode(null);
-        setOffersToNodes(null);
-        setCurrentPage(null);
-        setCurrentOffer(null);
-        resolvedOffersByProductKey.current.clear();
-        setActiveNodes([]);
-        setSearchResult(null);
-        setFrontPageItems([]);
-        setIsVisible(false);
-    }, []);
+    if (!catalogIndexRequests.current) {
+        catalogIndexRequests.current = createCatalogIndexRequestCoordinator((catalogType) => {
+            SendMessageComposer(new GetCatalogIndexComposer(catalogType));
+        });
+    }
+
+    if (!catalogIndexPrewarm.current) {
+        catalogIndexPrewarm.current = createCatalogIndexPrewarmController((catalogType) => catalogIndexRequests.current.request(catalogType));
+    }
 
     const resetVisibleCatalogState = useCallback((type?: string) => {
         requestedPage.current.resetRequest();
+        pageRequestCorrelation.current.reset();
+        setIsBusy(false);
+        setCatalogLoadError(null);
 
         setPageId(-1);
         setPreviousPageId(-1);
@@ -168,19 +169,23 @@ const useCatalogStore = () => {
         setCurrentType(normalizeCatalogType(type));
     }, []);
 
-    // Real-time furni importati: ri-mergia il chunk custom/imported.json5 nelle Map
-    // furnidata + RoomContentLoader all'apertura del catalogo, SENZA reload del client.
-    const refreshImportedFurnidata = useCallback(() => {
+    const importedFurnidataMerged = useRef(false);
+
+    const refreshImportedFurnidata = useCallback((force: boolean = false) => {
+        if (!force && importedFurnidataMerged.current) return;
+
         try {
             const base = GetConfiguration().getValue<string>('furnidata.url');
 
             if (!base || !base.length) return;
 
-            const importedUrl = base.replace(/\/+$/, '') + '/custom/imported.json5';
+            const importedUrl = base.replace(/\/+$/, '') + '/custom/imported.jsonc';
 
             GetSessionDataManager()
                 .mergeFurnitureDataFromUrl(importedUrl)
                 .then((added) => {
+                    importedFurnidataMerged.current = true;
+
                     if (added && added.length) GetRoomContentLoader().processFurnitureData(added);
                 })
                 .catch(() => {});
@@ -227,11 +232,6 @@ const useCatalogStore = () => {
         (offer: IPurchasableOffer) => {
             const roomSession = GetRoomSession();
 
-            // Count non-self, non-moderator users sharing the room. Only
-            // matters when the subscription has expired — the pure helper
-            // short-circuits on the limit-reached / not-in-room paths
-            // first, so we skip the room scan when there's still time on
-            // the clock.
             let visitorCount = 0;
 
             if (roomSession && secondsLeft <= 0 && !builderPlacementBlockedByVisitors) {
@@ -448,6 +448,11 @@ const useCatalogStore = () => {
         (pageId: number, offerId: number) => {
             if (pageId < 0) return;
 
+            pageRequestCorrelation.current.request(pageId, () => {
+                setIsBusy(false);
+                setCatalogLoadError('timeout');
+            });
+            setCatalogLoadError(null);
             setIsBusy(true);
             setPageId(pageId);
 
@@ -611,18 +616,23 @@ const useCatalogStore = () => {
         const parser = event.getParser();
         const parserCatalogType = normalizeCatalogType(parser.catalogType);
 
+        catalogIndexRequests.current.complete(parserCatalogType);
+
         if (parserCatalogType !== currentType) return;
 
         const { rootNode: builtRoot, offersToNodes: builtOffers } = buildCatalogNodeTree(parser.root);
+        const activePageId = activeNodes[activeNodes.length - 1]?.pageId ?? -1;
 
         setRootNode(builtRoot);
         setOffersToNodes(builtOffers);
+        if (activePageId > -1) setActiveNodes(restoreCatalogActivePath(builtRoot, activePageId));
     });
 
     useMessageEvent<CatalogPageMessageEvent>(CatalogPageMessageEvent, (event) => {
         const parser = event.getParser();
 
         if (parser.catalogType !== currentType) return;
+        if (!pageRequestCorrelation.current.matches(parser.pageId)) return;
 
         const purchasableOffers: IPurchasableOffer[] = [];
 
@@ -684,9 +694,9 @@ const useCatalogStore = () => {
 
         if (parser.frontPageItems && parser.frontPageItems.length) setFrontPageItems(parser.frontPageItems);
 
-        setIsBusy(false);
-
-        if (pageId === parser.pageId) {
+        if (pageRequestCorrelation.current.complete(parser.pageId)) {
+            setIsBusy(false);
+            setCatalogLoadError(null);
             showCatalogPage(
                 parsedCatalogPage.pageId,
                 parsedCatalogPage.layoutCode,
@@ -792,8 +802,6 @@ const useCatalogStore = () => {
         }
 
         applySelectedOffer(offer);
-
-        // (this._isObjectMoverRequested) && (this._purchasableOffer)
     });
 
     useMessageEvent<MarketplaceMakeOfferResult>(MarketplaceMakeOfferResult, (event) => {
@@ -814,18 +822,14 @@ const useCatalogStore = () => {
     });
 
     useMessageEvent<CatalogPublishedMessageEvent>(CatalogPublishedMessageEvent, (event) => {
-        const wasVisible = isVisible;
+        importedFurnidataMerged.current = false;
+        catalogIndexRequests.current.reset();
 
-        resetState();
+        if (!connectionState.authenticated) return;
 
-        if (wasVisible)
-            simpleAlert(
-                LocalizeText('catalog.alert.published.description'),
-                NotificationAlertType.ALERT,
-                null,
-                null,
-                LocalizeText('catalog.alert.published.title')
-            );
+        catalogIndexRequests.current.request(currentType);
+
+        if (isVisible && pageId > -1) loadCatalogPage(pageId, currentOffer?.offerId ?? -1);
     });
 
     useMessageEvent<BuildersClubFurniCountMessageEvent>(BuildersClubFurniCountMessageEvent, (event) => {
@@ -852,7 +856,7 @@ const useCatalogStore = () => {
 
     useUiEvent<CatalogPurchasedEvent>(CatalogPurchasedEvent.PURCHASE_SUCCESS, (event) => PlaySound(SoundNames.CREDITS));
 
-    useNitroEvent<RoomEngineObjectPlacedEvent>(RoomEngineObjectPlacedEvent.PLACED, (event) => {
+    useOctaneEvent<RoomEngineObjectPlacedEvent>(RoomEngineObjectPlacedEvent.PLACED, (event) => {
         if (!objectMoverRequested || event.type !== RoomEngineObjectPlacedEvent.PLACED) return;
 
         resetPlacedOfferData(true);
@@ -933,7 +937,7 @@ const useCatalogStore = () => {
 
                 if (roomObject) roomObject.model.setValue(RoomObjectVariable.FURNITURE_ALPHA_MULTIPLIER, 0.5);
 
-                if (catalogSkipPurchaseConfirmation) {
+                if (catalogSkipPurchaseConfirmation && !(purchasableOffer.product && purchasableOffer.product.isUniqueLimitedItem)) {
                     SendMessageComposer(new PurchaseFromCatalogComposer(pageId, purchasableOffer.offerId, product.extraParam, 1));
 
                     if (catalogPlaceMultipleObjects) requestOfferToMover(purchasableOffer);
@@ -1078,6 +1082,14 @@ const useCatalogStore = () => {
     }, [searchResult, currentPage, previousPageId, openPageById]);
 
     useEffect(() => {
+        if (isVisible) return;
+
+        pageRequestCorrelation.current.reset();
+        setIsBusy(false);
+        setCatalogLoadError(null);
+    }, [isVisible]);
+
+    useEffect(() => {
         const refreshCatalogLocalization = () => {
             setCatalogLocalizationVersion((value) => value + 1);
             setCurrentOffer((prevValue) => (prevValue?.clone ? prevValue.clone() : prevValue));
@@ -1097,10 +1109,28 @@ const useCatalogStore = () => {
             });
         };
 
-        window.addEventListener('nitro-localization-updated', refreshCatalogLocalization);
+        window.addEventListener('octane-localization-updated', refreshCatalogLocalization);
 
-        return () => window.removeEventListener('nitro-localization-updated', refreshCatalogLocalization);
+        return () => window.removeEventListener('octane-localization-updated', refreshCatalogLocalization);
     }, []);
+
+    useEffect(() => {
+        const refreshCurrentPage = () => {
+            if (pageId > -1) loadCatalogPage(pageId, currentOffer?.offerId ?? -1);
+        };
+
+        const refreshCatalogIndex = () => {
+            catalogIndexRequests.current.request(currentType);
+        };
+
+        window.addEventListener('catalog-admin-refresh-current-page', refreshCurrentPage);
+        window.addEventListener('catalog-admin-refresh-index', refreshCatalogIndex);
+
+        return () => {
+            window.removeEventListener('catalog-admin-refresh-current-page', refreshCurrentPage);
+            window.removeEventListener('catalog-admin-refresh-index', refreshCatalogIndex);
+        };
+    }, [pageId, currentOffer, loadCatalogPage, currentType]);
 
     useEffect(() => {
         if (!currentOffer) return;
@@ -1113,11 +1143,21 @@ const useCatalogStore = () => {
     }, [secondsLeft]);
 
     useEffect(() => {
-        if (!isVisible || rootNode) return;
+        if (!connectionState.authenticated) catalogIndexRequests.current.reset();
 
-        SendMessageComposer(new GetCatalogIndexComposer(currentType));
+        catalogIndexPrewarm.current.update({
+            authenticated: connectionState.authenticated,
+            visible: isVisible,
+            hasIndex: !!rootNode,
+            catalogType: currentType
+        });
+    }, [connectionState.authenticated, isVisible, rootNode, currentType]);
+
+    useEffect(() => {
+        if (!isVisible) return;
+
         SendMessageComposer(new BuildersClubQueryFurniCountMessageComposer());
-    }, [isVisible, rootNode, currentType]);
+    }, [isVisible, currentType]);
 
     useEffect(() => {
         setRoomPreviewer(new RoomPreviewer(GetRoomEngine(), ++RoomPreviewer.PREVIEW_COUNTER));
@@ -1131,10 +1171,17 @@ const useCatalogStore = () => {
         };
     }, []);
 
+    const retryCurrentPage = useCallback(() => {
+        if (pageId < 0) return;
+
+        loadCatalogPage(pageId, currentOffer?.offerId ?? -1);
+    }, [currentOffer, loadCatalogPage, pageId]);
+
     return {
         isVisible,
         setIsVisible,
         isBusy,
+        catalogLoadError,
         pageId,
         previousPageId,
         currentType,
@@ -1153,6 +1200,8 @@ const useCatalogStore = () => {
         setNavigationHidden,
         purchaseOptions,
         setPurchaseOptions,
+        giftReceiver,
+        setGiftReceiver,
         catalogLocalizationVersion,
         getNodeById,
         getNodeByName,
@@ -1173,7 +1222,9 @@ const useCatalogStore = () => {
         catalogPlaceMultipleObjects,
         setCatalogPlaceMultipleObjects,
         getBuilderFurniPlaceableStatus,
-        selectCatalogOffer
+        selectCatalogOffer,
+        resetPlacedOfferData,
+        retryCurrentPage
     };
 };
 
@@ -1188,6 +1239,7 @@ const useCatalogStore = () => {
 export const useCatalogData = () => {
     const {
         isBusy,
+        catalogLoadError,
         rootNode,
         offersToNodes,
         currentPage,
@@ -1202,10 +1254,11 @@ export const useCatalogData = () => {
         secondsLeft,
         secondsLeftWithGrace,
         updateTime
-    } = useBetween(useCatalogStore);
+    } = useSharedHook(useCatalogStore);
 
     return {
         isBusy,
+        catalogLoadError,
         rootNode,
         offersToNodes,
         currentPage,
@@ -1243,12 +1296,14 @@ export const useCatalogUiState = () => {
         setNavigationHidden,
         purchaseOptions,
         setPurchaseOptions,
+        giftReceiver,
+        setGiftReceiver,
         catalogPlaceMultipleObjects,
         setCatalogPlaceMultipleObjects,
         setCurrentPage,
         setCurrentOffer,
         setSearchResult
-    } = useBetween(useCatalogStore);
+    } = useSharedHook(useCatalogStore);
 
     return {
         isVisible,
@@ -1261,6 +1316,8 @@ export const useCatalogUiState = () => {
         setNavigationHidden,
         purchaseOptions,
         setPurchaseOptions,
+        giftReceiver,
+        setGiftReceiver,
         catalogPlaceMultipleObjects,
         setCatalogPlaceMultipleObjects,
         setCurrentPage,
@@ -1289,8 +1346,10 @@ export const useCatalogActions = () => {
         getNodeById,
         getNodeByName,
         getNodesByOfferId,
-        getBuilderFurniPlaceableStatus
-    } = useBetween(useCatalogStore);
+        getBuilderFurniPlaceableStatus,
+        resetPlacedOfferData,
+        retryCurrentPage
+    } = useSharedHook(useCatalogStore);
 
     return {
         openCatalogByType,
@@ -1304,6 +1363,10 @@ export const useCatalogActions = () => {
         getNodeById,
         getNodeByName,
         getNodesByOfferId,
-        getBuilderFurniPlaceableStatus
+        getBuilderFurniPlaceableStatus,
+        resetPlacedOfferData,
+        retryCurrentPage
     };
 };
+
+registerSharedHook(useCatalogStore);

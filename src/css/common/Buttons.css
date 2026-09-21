@@ -22,61 +22,79 @@ input[type=number] {
   border-radius: 0.5rem;
 }
 
-.btn-primary {
+.btn-primary,
+.btn-success {
   color: #fff;
-  background-color: #3c6d82;
-  border: 2px solid #1a617f;
   padding: 0.25rem 0.5rem;
   font-size: .7875rem;
-  border-radius: 0.5rem;
-  box-shadow: none!important;
+  font-weight: 700;
+  border-radius: 0;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent;
+  border-image-source: var(--habbo-skin-shiny-thick-green);
+  border-image-slice: 5 fill;
+  border-image-width: 5px;
+  border-image-repeat: stretch;
+  background: transparent;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: none !important;
+  image-rendering: var(--octane-pixel-art, pixelated);
 }
 
-.btn-primary:hover {
-  border: 2px solid #1a617f;
-  box-shadow: none!important;
-}
-
-.btn-success{
-  color: #fff;
-  background-color: #3c8243;
-  border: 2px solid #006d09;
-  padding: 0.25rem 0.5rem;
-  font-size: .7875rem;
-  border-radius: 0.5rem;
-  box-shadow: none!important;
-}
-
-.btn-success:hover{
-  box-shadow: none!important;
+.btn-primary:hover,
+.btn-success:hover {
+  border-image-source: var(--habbo-skin-shiny-thick-green-hover);
+  filter: none;
+  box-shadow: none !important;
 }
 
 .btn-danger{
   color: #fff;
-  background-color: #a81a12;
-  border: 2px solid #b9322a;
   padding: 0.25rem 0.5rem;
   font-size: .7875rem;
-  border-radius: 0.5rem;
-  box-shadow: none!important;
+  font-weight: 700;
+  border-radius: 0;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent;
+  border-image-source: var(--habbo-skin-shiny-red);
+  border-image-slice: 5 fill;
+  border-image-width: 5px;
+  border-image-repeat: stretch;
+  background: transparent;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: none !important;
+  image-rendering: var(--octane-pixel-art, pixelated);
 }
 
 .btn-danger:hover{
-  box-shadow: none!important;
+  border-image-source: var(--habbo-skin-shiny-red-hover);
+  filter: none;
+  box-shadow: none !important;
 }
 
 .btn-warning{
-  color: #222;
-  background-color: #ffc107;
-  border: 2px solid #f3c12a;
+  color: #111111;
+  border: 3px solid transparent;
+  border-image-source: var(--habbo-skin-button);
+  border-image-slice: 3 fill;
+  border-image-width: 3px;
+  border-image-repeat: stretch;
+  background: transparent;
   padding: 0.25rem 0.5rem;
   font-size: .7875rem;
-  border-radius: 0.5rem;
-  box-shadow: none!important;
+  border-radius: 0;
+  font-weight: 700;
+  text-shadow: none;
+  box-shadow: none !important;
+  image-rendering: var(--octane-pixel-art, pixelated);
 }
 
 .btn-warning:hover{
-  box-shadow: none!important;
+  border-image-source: var(--habbo-skin-button-hover);
+  filter: none;
+  box-shadow: none !important;
 }
 
 .btn-dark {

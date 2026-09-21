@@ -2,13 +2,14 @@ import { FC, useEffect, useState } from 'react';
 import { LocalizeText, WiredFurniType } from '../../../../api';
 import { Text } from '../../../../common';
 import { useWired } from '../../../../hooks';
-import { NitroInput } from '../../../../layout';
+import { OctaneInput } from '../../../../layout';
 import { WiredSourceOption, WiredSourcesSelector } from '../WiredSourcesSelector';
 import { WiredTriggerBaseView } from './WiredTriggerBaseView';
 
 const FURNI_SOURCE_OPTIONS: WiredSourceOption[] = [
     { value: 100, label: 'wiredfurni.params.sources.furni.100' },
-    { value: 200, label: 'wiredfurni.params.sources.furni.200' }
+    { value: 200, label: 'wiredfurni.params.sources.furni.200' },
+    { value: 0, label: 'wiredfurni.params.sources.furni.0' }
 ];
 
 const BOT_SOURCE_OPTIONS: WiredSourceOption[] = [
@@ -58,7 +59,7 @@ export const WiredTriggerBotReachedStuffView: FC<{}> = (props) => {
             {botSource === 100 && (
                 <div className="flex flex-col gap-1">
                     <Text bold>{LocalizeText('wiredfurni.params.bot.name')}</Text>
-                    <NitroInput maxLength={32} type="text" value={botName} onChange={(event) => setBotName(event.target.value)} />
+                    <OctaneInput maxLength={32} type="text" value={botName} onChange={(event) => setBotName(event.target.value)} />
                 </div>
             )}
         </WiredTriggerBaseView>

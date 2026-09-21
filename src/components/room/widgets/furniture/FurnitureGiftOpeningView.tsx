@@ -1,8 +1,8 @@
-import { CreateLinkEvent } from '@nitrots/nitro-renderer';
+import { CreateLinkEvent } from '@octane/renderer';
 import { FC } from 'react';
-import { attemptItemPlacement, LocalizeText } from '../../../../api';
-import { Button, Column, LayoutGiftTagView, LayoutImage, NitroCardContentView, NitroCardHeaderView, NitroCardView, Text } from '../../../../common';
-import { useFurniturePresentWidget, useInventoryFurni } from '../../../../hooks';
+import { attemptItemPlacement, CatalogPageName, LocalizeText } from '../../../../api';
+import { Button, Column, LayoutGiftTagView, LayoutImage, OctaneCardContentView, OctaneCardHeaderView, OctaneCardView, Text } from '../../../../common';
+import { useCatalogUiState, useFurniturePresentWidget, useInventoryFurni } from '../../../../hooks';
 
 export const FurnitureGiftOpeningView: FC<{}> = (props) => {
     const {
@@ -21,6 +21,7 @@ export const FurnitureGiftOpeningView: FC<{}> = (props) => {
         onClose = null
     } = useFurniturePresentWidget();
     const { groupItems = [] } = useInventoryFurni();
+    const { setGiftReceiver = null } = useCatalogUiState();
 
     if (objectId === -1) return null;
 
@@ -32,13 +33,18 @@ export const FurnitureGiftOpeningView: FC<{}> = (props) => {
         onClose();
     };
 
+    const giveGiftBack = () => {
+        setGiftReceiver?.(senderName);
+        CreateLinkEvent(`catalog/open/${CatalogPageName.GIFT_SHOP}`);
+    };
+
     return (
-        <NitroCardView className="nitro-gift-opening" theme="primary-slim">
-            <NitroCardHeaderView
+        <OctaneCardView className="octane-gift-opening" theme="primary-slim">
+            <OctaneCardHeaderView
                 headerText={LocalizeText(senderName ? 'widget.furni.present.window.title_from' : 'widget.furni.present.window.title', ['name'], [senderName])}
                 onCloseClick={onClose}
             />
-            <NitroCardContentView>
+            <OctaneCardContentView>
                 {placedItemId === -1 && (
                     <Column overflow="hidden">
                         <div className="flex justify-center items-center overflow-auto">
@@ -47,7 +53,7 @@ export const FurnitureGiftOpeningView: FC<{}> = (props) => {
                         {isOwnerOfFurniture && (
                             <div className="flex gap-1">
                                 {senderName && (
-                                    <Button fullWidth onClick={(event) => CreateLinkEvent('catalog/open')}>
+                                    <Button fullWidth onClick={giveGiftBack}>
                                         {LocalizeText('widget.furni.present.give_gift', ['name'], [senderName])}
                                     </Button>
                                 )}
@@ -84,7 +90,7 @@ export const FurnitureGiftOpeningView: FC<{}> = (props) => {
                                     </Button>
                                 </div>
                                 {senderName && senderName.length && (
-                                    <Button fullWidth onClick={(event) => CreateLinkEvent('catalog/open')}>
+                                    <Button fullWidth onClick={giveGiftBack}>
                                         {LocalizeText('widget.furni.present.give_gift', ['name'], [senderName])}
                                     </Button>
                                 )}
@@ -92,7 +98,7 @@ export const FurnitureGiftOpeningView: FC<{}> = (props) => {
                         </Column>
                     </div>
                 )}
-            </NitroCardContentView>
-        </NitroCardView>
+            </OctaneCardContentView>
+        </OctaneCardView>
     );
 };

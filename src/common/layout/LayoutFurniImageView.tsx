@@ -1,24 +1,26 @@
-import { GetRoomEngine, IGetImageListener, ImageResult, TextureUtils, Vector3d } from '@nitrots/nitro-renderer';
+import { GetRoomEngine, IGetImageListener, ImageResult, TextureUtils, Vector3d } from '@octane/renderer';
 import { CSSProperties, FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ProductTypeEnum } from '../../api';
 import { Base, BaseProps } from '../Base';
+import { PIXEL_ART_RENDERING } from './PixelArtRendering';
 
 interface LayoutFurniImageViewProps extends BaseProps<HTMLDivElement> {
     productType: string;
     productClassId: number;
     direction?: number;
     extraData?: string;
+    // Multistate furni state index. -1 (default) leaves the furni at its base
+    // look; >= 0 drives the visualization to that interaction state exactly the
+    // way the room does (ObjectDataUpdateMessage), so a state change here matches
+    // the in-game appearance instead of only tweaking the extras string.
+    state?: number;
     scale?: number;
 }
 
 export const LayoutFurniImageView: FC<LayoutFurniImageViewProps> = (props) => {
-    const { productType = 's', productClassId = -1, direction = 2, extraData = '', scale = 1, style = {}, ...rest } = props;
+    const { productType = 's', productClassId = -1, direction = 2, extraData = '', state = -1, scale = 1, style = {}, ...rest } = props;
     const [imageElement, setImageElement] = useState<HTMLImageElement>(null);
     const isMounted = useRef(true);
-    // Request id bumped by the effect on every prop change. The async
-    // generateImage / imageReady callbacks capture it and only write
-    // back if it still matches — prevents an older, slower fetch from
-    // overwriting a newer one when props change in quick succession.
     const requestIdRef = useRef(0);
 
     useEffect(() => {
@@ -49,7 +51,7 @@ export const LayoutFurniImageView: FC<LayoutFurniImageViewProps> = (props) => {
         if (scale !== 1) {
             newStyle.transform = `scale(${scale})`;
 
-            if (!(scale % 1)) newStyle.imageRendering = 'pixelated';
+            if (!(scale % 1)) newStyle.imageRendering = PIXEL_ART_RENDERING;
         }
 
         if (Object.keys(style).length) newStyle = { ...newStyle, ...style };
@@ -66,20 +68,20 @@ export const LayoutFurniImageView: FC<LayoutFurniImageViewProps> = (props) => {
 
         const listener: IGetImageListener = {
             imageReady: (result) => updateImage(result?.data, requestId),
-            imageFailed: null
+            imageFailed: () => updateImage(null, requestId)
         };
 
         switch (productType.toLocaleLowerCase()) {
             case ProductTypeEnum.FLOOR:
-                imageResult = GetRoomEngine().getFurnitureFloorImage(productClassId, new Vector3d(direction), 64, listener, 0, extraData);
+                imageResult = GetRoomEngine().getFurnitureFloorImage(productClassId, new Vector3d(direction), 64, listener, 0, extraData, state);
                 break;
             case ProductTypeEnum.WALL:
-                imageResult = GetRoomEngine().getFurnitureWallImage(productClassId, new Vector3d(direction), 64, listener, 0, extraData);
+                imageResult = GetRoomEngine().getFurnitureWallImage(productClassId, new Vector3d(direction), 64, listener, 0, extraData, state);
                 break;
         }
 
         if (imageResult?.data) updateImage(imageResult.data, requestId);
-    }, [productType, productClassId, direction, extraData, updateImage]);
+    }, [productType, productClassId, direction, extraData, state, updateImage]);
 
     return <Base classNames={['furni-image']} style={getStyle} {...rest} />;
 };

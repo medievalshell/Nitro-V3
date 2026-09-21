@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { StrictMode, Suspense } from 'react';
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
 import { App } from './App';
@@ -15,27 +15,36 @@ const queryClient = new QueryClient({
     }
 });
 
+import './css/habbo/HabboTheme.css';
 import './css/index.css';
 
+import './css/avatar-editor/AvatarEditorView.css';
 import './css/backgrounds/BackgroundsView.css';
 import './css/badges/BadgeLeaderboardView.css';
 import './css/catalog/CatalogView.css';
+import './css/catalog/CatalogExperience.css';
+import './css/catalog/CatalogVipBuyView.css';
 import './css/emustats/EmuStatsView.css';
+import './css/floorplan-editor/FloorplanEditorView.css';
 
 import './css/chat/Chats.css';
 import './css/chat/ChatHistoryView.css';
 import './css/chat/ChatInputMentionSelectorView.css';
+import './css/chat/ChatInputHabbiconSelectorView.css';
 import './css/mentions/MentionToasts.css';
 import './css/mentions/MentionsPanel.css';
 
 import './css/common/Buttons.css';
-import './css/common/ClassicScrollbar.css';
+import './css/habbo/HabboSkin.css';
 import './css/common/PrefixEffects.css';
 
 import './css/forms/form_select.css';
 
 import './css/friends/FriendsView.css';
 import './css/fortune-wheel/FortuneWheelView.css';
+import './css/groups/GroupView.css';
+
+import './css/game-center/GameCenterView.css';
 
 import './css/help/HelpView.css';
 
@@ -46,19 +55,26 @@ import './css/login/LoginView.css';
 import './css/icons/icons.css';
 
 import './css/inventory/InventoryView.css';
+import './css/inventory/InventoryAnimals.css';
+import './css/inventory/InventoryBadges.css';
+import './css/inventory/InventoryFilters.css';
 
 import './css/layout/LayoutTrophy.css';
 
-import './css/nitrocard/NitroCardView.css';
+import './css/octanecard/OctaneCardView.css';
+import './css/achievements/AchievementsView.css';
 
 import './css/notification/NotificationCenterView.css';
+import './css/notification/HotelAlertToast.css';
 
 import './css/purse/PurseView.css';
 import './css/radio/RadioView.css';
 
 import './css/room/InfoStand.css';
+import './css/room/NavigatorRoomInfo.css';
 import './css/room/NavigatorRoomSettings.css';
 import './css/room/RoomWidgets.css';
+import './css/room/WiredVariableFx.css';
 
 import './css/slider.css';
 
@@ -69,6 +85,12 @@ import './css/user-settings/UserSettingsView.css';
 import './css/vault/VaultView.css';
 import './css/widgets/FurnitureWidgets.css';
 import './css/WiredView.css';
+import './css/camera/CameraWidget.css';
+import './css/catalog/CatalogGiftView.css';
+import './css/navigator/NavigatorView.css';
+import './css/common/ClassicScrollbar.css';
+
+document.documentElement.classList.add('has-classic-scrollbar');
 
 createRoot(document.getElementById('root')).render(
     <StrictMode>
@@ -82,9 +104,7 @@ createRoot(document.getElementById('root')).render(
                     />
                 )}
             >
-                <Suspense fallback={<LoadingView message="Loading…" />}>
-                    <App />
-                </Suspense>
+                <App />
             </ErrorBoundary>
         </QueryClientProvider>
     </StrictMode>

@@ -1,11 +1,10 @@
-import { RoomBannedUsersComposer, RoomDataParser, RoomSettingsDataEvent, SaveRoomSettingsComposer } from '@nitrots/nitro-renderer';
+import { RoomBannedUsersComposer, RoomDataParser, RoomSettingsDataEvent, SaveRoomSettingsComposer } from '@octane/renderer';
 import { FC, useState } from 'react';
 import { CreateLinkEvent, IRoomData, LocalizeText, SendMessageComposer } from '../../../../api';
-import { NitroCardContentView, NitroCardHeaderView, NitroCardTabsItemView, NitroCardTabsView, NitroCardView } from '../../../../common';
+import { OctaneCardContentView, OctaneCardHeaderView, OctaneCardTabsItemView, OctaneCardTabsView, OctaneCardView } from '../../../../common';
 import { useMessageEvent } from '../../../../hooks';
 import { NavigatorRoomSettingsAccessTabView } from './NavigatorRoomSettingsAccessTabView';
 import { NavigatorRoomSettingsBasicTabView } from './NavigatorRoomSettingsBasicTabView';
-import { NavigatorRoomSettingsMiscTabView } from './NavigatorRoomSettingsMiscTabView';
 import { NavigatorRoomSettingsModTabView } from './NavigatorRoomSettingsModTabView';
 import { NavigatorRoomSettingsRightsTabView } from './NavigatorRoomSettingsRightsTabView';
 import { NavigatorRoomSettingsVipChatTabView } from './NavigatorRoomSettingsVipChatTabView';
@@ -15,8 +14,7 @@ const TABS: string[] = [
     'navigator.roomsettings.tab.2',
     'navigator.roomsettings.tab.3',
     'navigator.roomsettings.tab.4',
-    'navigator.roomsettings.tab.5',
-    'product.type.other'
+    'navigator.roomsettings.tab.5'
 ];
 
 export const NavigatorRoomSettingsView: FC<{}> = (props) => {
@@ -40,6 +38,12 @@ export const NavigatorRoomSettingsView: FC<{}> = (props) => {
             tradeState: data.tradeMode,
             allowWalkthrough: data.allowWalkThrough,
             allowUnderpass: data.allowUnderpass,
+            muteAllPets: data.muteAllPets,
+            leaveOnDoorTileEnabled: data.leaveOnDoorTileEnabled,
+            idleSleepEnabled: data.idleSleepEnabled,
+            idleSleepTimeoutSeconds: data.idleSleepTimeoutSeconds,
+            idleAutokickEnabled: data.idleAutokickEnabled,
+            idleAutokickTimeoutSeconds: data.idleAutokickTimeoutSeconds,
             lockState: data.doorMode,
             password: null,
             allowPets: data.allowPets,
@@ -98,6 +102,24 @@ export const NavigatorRoomSettingsView: FC<{}> = (props) => {
                 case 'allow_underpass':
                     newValue.allowUnderpass = Boolean(value);
                     break;
+                case 'mute_all_pets':
+                    newValue.muteAllPets = Boolean(value);
+                    break;
+                case 'leave_on_door_tile_enabled':
+                    newValue.leaveOnDoorTileEnabled = Boolean(value);
+                    break;
+                case 'idle_sleep_enabled':
+                    newValue.idleSleepEnabled = Boolean(value);
+                    break;
+                case 'idle_sleep_timeout_seconds':
+                    newValue.idleSleepTimeoutSeconds = Number(value);
+                    break;
+                case 'idle_autokick_enabled':
+                    newValue.idleAutokickEnabled = Boolean(value);
+                    break;
+                case 'idle_autokick_timeout_seconds':
+                    newValue.idleAutokickTimeoutSeconds = Number(value);
+                    break;
                 case 'allow_pets':
                     newValue.allowPets = Boolean(value);
                     break;
@@ -153,7 +175,7 @@ export const NavigatorRoomSettingsView: FC<{}> = (props) => {
                     newValue.roomDescription,
                     newValue.lockState,
                     newValue.password,
-                    newValue.userCount,
+                    Math.max(1, Math.min(200, Number(newValue.userCount) || 1)),
                     newValue.categoryId,
                     newValue.tags.length,
                     newValue.tags,
@@ -170,9 +192,20 @@ export const NavigatorRoomSettingsView: FC<{}> = (props) => {
                     newValue.chatSettings.mode,
                     newValue.chatSettings.weight,
                     newValue.chatSettings.speed,
-                    newValue.chatSettings.distance,
+                    Math.max(1, Math.min(99, Number(newValue.chatSettings.distance) || 1)),
                     newValue.chatSettings.protection,
-                    newValue.allowUnderpass
+                    newValue.allowUnderpass,
+                    newValue.muteAllPets,
+                    newValue.leaveOnDoorTileEnabled,
+                    newValue.idleSleepEnabled,
+                    newValue.idleSleepEnabled ? Math.max(30, Math.min(3600, Number(newValue.idleSleepTimeoutSeconds) || 30)) : 0,
+                    newValue.idleAutokickEnabled,
+                    newValue.idleAutokickEnabled
+                        ? Math.max(
+                              newValue.idleSleepEnabled ? (Number(newValue.idleSleepTimeoutSeconds) || 30) + 30 : 60,
+                              Math.min(36000, Number(newValue.idleAutokickTimeoutSeconds) || 60)
+                          )
+                        : 0
                 )
             );
 
@@ -183,11 +216,12 @@ export const NavigatorRoomSettingsView: FC<{}> = (props) => {
     if (!roomData) return null;
 
     return (
-        <NitroCardView
-            className="nitro-room-settings min-w-0 w-[min(420px,calc(100vw-16px))] max-w-[calc(100vw-16px)] max-h-[calc(100vh-16px)]"
-            uniqueKey="nitro-room-settings"
+        <OctaneCardView
+            className="octane-room-settings min-w-0 w-[min(341px,calc(100vw-16px))] h-[min(520px,calc(100vh-16px))] max-w-[calc(100vw-16px)]"
+            isResizable={false}
+            uniqueKey="octane-room-settings"
         >
-            <NitroCardHeaderView
+            <OctaneCardHeaderView
                 headerText={LocalizeText('navigator.roomsettings')}
                 isInfoToHabboPages={currentTab === TABS[3]}
                 onClickInfoHabboPages={() => {
@@ -195,23 +229,22 @@ export const NavigatorRoomSettingsView: FC<{}> = (props) => {
                 }}
                 onCloseClick={onClose}
             />
-            <NitroCardTabsView>
+            <OctaneCardTabsView>
                 {TABS.map((tab) => {
                     return (
-                        <NitroCardTabsItemView key={tab} isActive={currentTab === tab} onClick={(event) => setCurrentTab(tab)}>
+                        <OctaneCardTabsItemView key={tab} isActive={currentTab === tab} onClick={(event) => setCurrentTab(tab)}>
                             {LocalizeText(tab)}
-                        </NitroCardTabsItemView>
+                        </OctaneCardTabsItemView>
                     );
                 })}
-            </NitroCardTabsView>
-            <NitroCardContentView overflow="auto">
+            </OctaneCardTabsView>
+            <OctaneCardContentView overflow="auto">
                 {currentTab === TABS[0] && <NavigatorRoomSettingsBasicTabView handleChange={handleChange} roomData={roomData} onClose={onClose} />}
                 {currentTab === TABS[1] && <NavigatorRoomSettingsAccessTabView handleChange={handleChange} roomData={roomData} />}
                 {currentTab === TABS[2] && <NavigatorRoomSettingsRightsTabView handleChange={handleChange} roomData={roomData} />}
                 {currentTab === TABS[3] && <NavigatorRoomSettingsVipChatTabView handleChange={handleChange} roomData={roomData} />}
                 {currentTab === TABS[4] && <NavigatorRoomSettingsModTabView handleChange={handleChange} roomData={roomData} />}
-                {currentTab === TABS[5] && <NavigatorRoomSettingsMiscTabView roomData={roomData} />}
-            </NitroCardContentView>
-        </NitroCardView>
+            </OctaneCardContentView>
+        </OctaneCardView>
     );
 };

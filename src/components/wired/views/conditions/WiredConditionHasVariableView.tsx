@@ -1,5 +1,5 @@
 import { FC, useEffect, useMemo, useState } from 'react';
-import { LocalizeText, WiredFurniType } from '../../../../api';
+import { LocalizeText, localizeWithFallback, WiredFurniType } from '../../../../api';
 import contextVariableIcon from '../../../../assets/images/wired/var/icon_source_context_clean.png';
 import furniVariableIcon from '../../../../assets/images/wired/var/icon_source_furni.png';
 import userVariableIcon from '../../../../assets/images/wired/var/icon_source_user.png';
@@ -42,7 +42,7 @@ const TARGET_BUTTONS: Array<{ key: ConditionVariableTargetType; icon: string; di
     { key: 'user', icon: userVariableIcon },
     { key: 'context', icon: contextVariableIcon }
 ];
-const CONTEXT_SOURCE_OPTIONS = [{ value: SOURCE_TRIGGER, label: 'Current execution' }];
+const CONTEXT_SOURCE_OPTIONS = [{ value: SOURCE_TRIGGER, label: localizeWithFallback('wiredfurni.params.sources.context', 'Current execution') }];
 
 const getTargetValue = (value: ConditionVariableTargetType) => {
     switch (value) {
@@ -224,16 +224,16 @@ export const WiredConditionHasVariableView: FC<WiredConditionHasVariableViewProp
                 </div>
             }
         >
-            <div className="nitro-wired__give-var">
-                <div className="nitro-wired__give-var-heading">
+            <div className="octane-wired__give-var">
+                <div className="octane-wired__give-var-heading">
                     <Text>{LocalizeText('wiredfurni.params.variables.variable_selection')}</Text>
-                    <div className="nitro-wired__give-var-targets">
+                    <div className="octane-wired__give-var-targets">
                         {TARGET_BUTTONS.map((button) => (
                             <button
                                 key={button.key}
                                 type="button"
                                 disabled={button.disabled}
-                                className={`nitro-wired__give-var-target nitro-wired__give-var-target--${button.key} ${targetType === button.key ? 'is-active' : ''}`}
+                                className={`octane-wired__give-var-target octane-wired__give-var-target--${button.key} ${targetType === button.key ? 'is-active' : ''}`}
                                 onClick={() => handleTargetChange(button.key)}
                             >
                                 <img src={button.icon} alt={button.key} />

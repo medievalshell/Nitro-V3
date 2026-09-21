@@ -1,4 +1,5 @@
 export * from './DoorStateType';
+export * from './NavigatorUserCountColor';
 export * from './INavigatorData';
 export * from './INavigatorSearchFilter';
 export * from './IRoomChatSettings';
@@ -8,6 +9,7 @@ export * from './IRoomModerationSettings';
 export * from './NavigatorSearchResultViewDisplayMode';
 export * from './RoomInfoData';
 export * from './RoomSettingsUtils';
+export * from './RoomThumbnailCache';
 export * from './SearchFilterOptions';
 export * from './ToggleFavoriteRoom';
 export * from './TryVisitRoom';

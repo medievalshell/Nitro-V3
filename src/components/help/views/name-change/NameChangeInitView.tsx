@@ -1,4 +1,4 @@
-import { GetSessionDataManager } from '@nitrots/nitro-renderer';
+import { GetSessionDataManager } from '@octane/renderer';
 import { FC } from 'react';
 import { LocalizeText } from '../../../../api';
 import { NameChangeLayoutViewProps } from './NameChangeView.types';
@@ -8,7 +8,7 @@ export const NameChangeInitView: FC<NameChangeLayoutViewProps> = (props) => {
 
     return (
         <div className="flex flex-col gap-4 h-full">
-            <div className="nitro-card-panel p-2 text-center">{LocalizeText('tutorial.name_change.info.main')}</div>
+            <div className="octane-card-panel p-2 text-center">{LocalizeText('tutorial.name_change.info.main')}</div>
             <div className="font-bold	 flex items-center justify-center size-full">
                 {LocalizeText('tutorial.name_change.current', ['name'], [GetSessionDataManager().userName])}
             </div>
@@ -16,7 +16,7 @@ export const NameChangeInitView: FC<NameChangeLayoutViewProps> = (props) => {
                 <button className="btn btn-success w-full" onClick={() => onAction('start')}>
                     {LocalizeText('tutorial.name_change.change')}
                 </button>
-                <button className="btn btn-primary w-full" onClick={() => onAction('confirmation', GetSessionDataManager().userName)}>
+                <button className="habbo-btn-secondary w-full" onClick={() => onAction('confirmation', GetSessionDataManager().userName)}>
                     {LocalizeText('tutorial.name_change.keep')}
                 </button>
             </div>

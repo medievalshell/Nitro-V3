@@ -1,4 +1,4 @@
-import { ISongInfo } from '@nitrots/nitro-renderer';
+import { ISongInfo } from '@octane/renderer';
 import { FC, useState } from 'react';
 import { GetConfigurationValue, GetDiskColor, LocalizeText } from '../../../../../api';
 import { Button, Text } from '../../../../../common';
@@ -55,7 +55,7 @@ export const SongPlaylistView: FC<SongPlaylistViewProps> = (props) => {
             </div>
             {(!playlist || playlist.length === 0) && (
                 <>
-                    <div className="playlist-bottom text-black p-1 ms-5">
+                    <div className="playlist-bottom text-black p-1 ms-12">
                         <h5>{LocalizeText('playlist.editor.add.songs.to.your.playlist')}</h5>
                         <div>{LocalizeText('playlist.editor.text.click.song.to.choose.click.again.to.move')}</div>
                     </div>

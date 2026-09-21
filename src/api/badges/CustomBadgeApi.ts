@@ -1,5 +1,5 @@
-import { GetConfiguration, GetLocalizationManager } from '@nitrots/nitro-renderer';
-import { getAccessToken } from '../auth';
+import { GetConfiguration, GetLocalizationManager } from '@octane/renderer';
+import { clearAccessToken, getAccessToken } from '../auth';
 
 export interface CustomBadgeRecord {
     badgeId: string;
@@ -46,7 +46,7 @@ const buildUrl = (key: string, fallback: string, badgeId?: string): string => {
 const authHeaders = (): Record<string, string> => {
     const headers: Record<string, string> = {
         Accept: 'application/json',
-        'X-Requested-With': 'NitroCustomBadges'
+        'X-Requested-With': 'OctaneCustomBadges'
     };
     const token = getAccessToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -65,6 +65,7 @@ const parseJson = async <T>(response: Response): Promise<T> => {
 
 const throwOnError = async (response: Response): Promise<void> => {
     if (response.ok) return;
+    if (response.status === 401) clearAccessToken();
     const payload = await parseJson<CustomBadgeError>(response);
     const message = payload?.error || `Request failed (${response.status}).`;
     const err = new Error(message) as Error & { status: number; code?: string };

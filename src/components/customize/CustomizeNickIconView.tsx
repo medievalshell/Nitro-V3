@@ -11,7 +11,7 @@ import {
     SetActivePrefixComposer,
     SetDisplayOrderComposer,
     UserNickIconsEvent
-} from '@nitrots/nitro-renderer';
+} from '@octane/renderer';
 import { FC, useEffect, useMemo, useState } from 'react';
 import {
     getPrefixEffectStyle,
@@ -26,11 +26,11 @@ import {
 import { GetNickIconUrl } from '../../assets/images/user_custom/nick_icons';
 import {
     Button,
-    NitroCardContentView,
-    NitroCardHeaderView,
-    NitroCardTabsItemView,
-    NitroCardTabsView,
-    NitroCardView,
+    OctaneCardContentView,
+    OctaneCardHeaderView,
+    OctaneCardTabsItemView,
+    OctaneCardTabsView,
+    OctaneCardView,
     Text,
     UserIdentityView
 } from '../../common';
@@ -328,20 +328,20 @@ export const CustomizeNickIconView: FC<{}> = () => {
     if (!isVisible) return null;
 
     return (
-        <NitroCardView className="customize-nick-icon-window w-[680px] max-w-[95vw]" theme="primary-slim" uniqueKey="customize-nick-icons">
-            <NitroCardHeaderView headerText="Customize Bubble Identity" onCloseClick={() => setIsVisible(false)} />
-            <NitroCardTabsView>
-                <NitroCardTabsItemView isActive={activeTab === 'icons'} onClick={() => setActiveTab('icons')}>
+        <OctaneCardView className="customize-nick-icon-window w-[680px] max-w-[95vw]" theme="primary-slim" uniqueKey="customize-nick-icons">
+            <OctaneCardHeaderView headerText="Customize Bubble Identity" onCloseClick={() => setIsVisible(false)} />
+            <OctaneCardTabsView>
+                <OctaneCardTabsItemView isActive={activeTab === 'icons'} onClick={() => setActiveTab('icons')}>
                     <Text>Icons</Text>
-                </NitroCardTabsItemView>
-                <NitroCardTabsItemView isActive={activeTab === 'prefix'} onClick={() => setActiveTab('prefix')}>
+                </OctaneCardTabsItemView>
+                <OctaneCardTabsItemView isActive={activeTab === 'prefix'} onClick={() => setActiveTab('prefix')}>
                     <Text>Prefix</Text>
-                </NitroCardTabsItemView>
-                <NitroCardTabsItemView isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')}>
+                </OctaneCardTabsItemView>
+                <OctaneCardTabsItemView isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')}>
                     <Text>Settings</Text>
-                </NitroCardTabsItemView>
-            </NitroCardTabsView>
-            <NitroCardContentView className="flex max-h-[78vh] flex-col gap-3 overflow-y-auto text-black">
+                </OctaneCardTabsItemView>
+            </OctaneCardTabsView>
+            <OctaneCardContentView className="flex max-h-[78vh] flex-col gap-3 overflow-y-auto text-black">
                 <div className="rounded border border-black/10 bg-black/5 p-3">
                     <Text bold>Live preview</Text>
                     <div className="mt-2 flex min-h-[54px] items-center justify-center rounded border border-black/10 bg-[#cfe8fb] px-3 py-2 text-[#1f2937]">
@@ -370,10 +370,10 @@ export const CustomizeNickIconView: FC<{}> = () => {
                                 return (
                                     <div
                                         key={item.iconKey}
-                                        className={`relative flex min-h-[126px] flex-col items-center justify-between gap-2 rounded border p-3 transition-colors ${item.active ? 'border-[#1e7295] bg-[#dff3fb]' : 'border-black/10 bg-black/5'}`}
+                                        className={`relative flex min-h-[126px] flex-col items-center justify-between gap-2 rounded border p-3 transition-colors ${item.active ? 'border-[#418db0] bg-[#dff3fb]' : 'border-black/10 bg-black/5'}`}
                                     >
                                         {item.active && (
-                                            <span className="absolute right-1 top-1 rounded bg-[#1e7295] px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
+                                            <span className="absolute right-1 top-1 rounded bg-[#418db0] px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
                                                 Active
                                             </span>
                                         )}
@@ -403,14 +403,14 @@ export const CustomizeNickIconView: FC<{}> = () => {
                         <div className="rounded border border-black/10 bg-black/5 p-1">
                             <div className="flex items-center gap-2">
                                 <button
-                                    className={`rounded px-3 py-1.5 text-[11px] font-bold transition-colors ${activePrefixSubTab === 'library' ? 'bg-[#1e7295] text-white' : 'bg-white text-black'}`}
+                                    className={`rounded px-3 py-1.5 text-[11px] font-bold transition-colors ${activePrefixSubTab === 'library' ? 'bg-[#418db0] text-white' : 'bg-white text-black'}`}
                                     type="button"
                                     onClick={() => setActivePrefixSubTab('library')}
                                 >
                                     Library
                                 </button>
                                 <button
-                                    className={`rounded px-3 py-1.5 text-[11px] font-bold transition-colors ${activePrefixSubTab === 'custom' ? 'bg-[#1e7295] text-white' : 'bg-white text-black'}`}
+                                    className={`rounded px-3 py-1.5 text-[11px] font-bold transition-colors ${activePrefixSubTab === 'custom' ? 'bg-[#418db0] text-white' : 'bg-white text-black'}`}
                                     type="button"
                                     onClick={() => setActivePrefixSubTab('custom')}
                                 >
@@ -428,10 +428,10 @@ export const CustomizeNickIconView: FC<{}> = () => {
                                     {combinedPrefixes.map((item) => (
                                         <div
                                             key={`${item.catalogPrefixId || 'custom'}-${item.ownedPrefixId || item.id}`}
-                                            className={`relative flex min-h-[96px] flex-col gap-2 rounded border p-2.5 ${item.active ? 'border-[#1e7295] bg-[#dff3fb]' : 'border-black/10 bg-black/5'}`}
+                                            className={`relative flex min-h-[96px] flex-col gap-2 rounded border p-2.5 ${item.active ? 'border-[#418db0] bg-[#dff3fb]' : 'border-black/10 bg-black/5'}`}
                                         >
                                             {item.active && (
-                                                <span className="absolute right-1 top-1 rounded bg-[#1e7295] px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
+                                                <span className="absolute right-1 top-1 rounded bg-[#418db0] px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
                                                     Active
                                                 </span>
                                             )}
@@ -507,7 +507,7 @@ export const CustomizeNickIconView: FC<{}> = () => {
                                             {PRESET_COLORS.map((color) => (
                                                 <button
                                                     key={color}
-                                                    className={`flex h-[28px] items-center justify-center rounded border text-[10px] font-bold uppercase ${customPrefixColor === color ? 'border-[#1e7295] ring-1 ring-[#1e7295]' : 'border-black/10'}`}
+                                                    className={`flex h-[28px] items-center justify-center rounded border text-[10px] font-bold uppercase ${customPrefixColor === color ? 'border-[#418db0] ring-1 ring-[#418db0]' : 'border-black/10'}`}
                                                     style={{ backgroundColor: color }}
                                                     type="button"
                                                     onClick={() => setCustomPrefixColor(color)}
@@ -644,7 +644,7 @@ export const CustomizeNickIconView: FC<{}> = () => {
                         </div>
                     </div>
                 )}
-            </NitroCardContentView>
+            </OctaneCardContentView>
             {showEmojiPicker && (
                 <>
                     <div className="fixed inset-0 z-[999]" onClick={() => setShowEmojiPicker(false)} />
@@ -662,6 +662,6 @@ export const CustomizeNickIconView: FC<{}> = () => {
                     </div>
                 </>
             )}
-        </NitroCardView>
+        </OctaneCardView>
     );
 };

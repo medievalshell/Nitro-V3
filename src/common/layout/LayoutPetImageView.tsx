@@ -1,6 +1,7 @@
-import { GetRoomEngine, IPetCustomPart, PetFigureData, TextureUtils, Vector3d } from '@nitrots/nitro-renderer';
+import { GetRoomEngine, IPetCustomPart, PetFigureData, TextureUtils, Vector3d } from '@octane/renderer';
 import { CSSProperties, FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Base, BaseProps } from '../Base';
+import { PIXEL_ART_RENDERING } from './PixelArtRendering';
 
 interface LayoutPetImageViewProps extends BaseProps<HTMLDivElement> {
     figure?: string;
@@ -32,6 +33,7 @@ export const LayoutPetImageView: FC<LayoutPetImageViewProps> = (props) => {
     const [width, setWidth] = useState(0);
     const [height, setHeight] = useState(0);
     const isDisposed = useRef(false);
+    const imageRequestGeneration = useRef(0);
 
     const getStyle = useMemo(() => {
         let newStyle: CSSProperties = {};
@@ -41,7 +43,7 @@ export const LayoutPetImageView: FC<LayoutPetImageViewProps> = (props) => {
         if (scale !== 1) {
             newStyle.transform = `scale(${scale})`;
 
-            if (!(scale % 1)) newStyle.imageRendering = 'pixelated';
+            if (!(scale % 1)) newStyle.imageRendering = PIXEL_ART_RENDERING;
         }
 
         newStyle.width = width;
@@ -53,6 +55,8 @@ export const LayoutPetImageView: FC<LayoutPetImageViewProps> = (props) => {
     }, [petUrl, scale, style, width, height]);
 
     useEffect(() => {
+        const generation = ++imageRequestGeneration.current;
+        const isCurrentRequest = () => !isDisposed.current && imageRequestGeneration.current === generation;
         let url = null;
 
         let petTypeId = typeId;
@@ -80,16 +84,22 @@ export const LayoutPetImageView: FC<LayoutPetImageViewProps> = (props) => {
             64,
             {
                 imageReady: async (result) => {
-                    if (isDisposed.current) return;
+                    if (!isCurrentRequest()) return;
 
                     const { image, data: texture } = result;
 
                     if (image) {
+                        if (!isCurrentRequest()) return;
+
                         setPetUrl(image.src);
                         setWidth(image.width);
                         setHeight(image.height);
                     } else if (texture) {
-                        setPetUrl(await TextureUtils.generateImageUrl(texture));
+                        const generatedUrl = await TextureUtils.generateImageUrl(texture);
+
+                        if (!isCurrentRequest()) return;
+
+                        setPetUrl(generatedUrl);
                         setWidth(texture.width);
                         setHeight(texture.height);
                     }
@@ -108,13 +118,17 @@ export const LayoutPetImageView: FC<LayoutPetImageViewProps> = (props) => {
             (async () => {
                 const image = await imageResult.getImage();
 
-                if (image) {
+                if (image && isCurrentRequest()) {
                     setPetUrl(image.src);
                     setWidth(image.width);
                     setHeight(image.height);
                 }
             })();
         }
+
+        return () => {
+            if (imageRequestGeneration.current === generation) imageRequestGeneration.current++;
+        };
     }, [figure, typeId, paletteId, petColor, customParts, posture, headOnly, direction]);
 
     useEffect(() => {

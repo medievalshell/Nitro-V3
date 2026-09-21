@@ -1,6 +1,6 @@
 # Setup Secure Runtime in produzione
 
-Guida rapida per avviare Nitro con:
+Guida rapida per avviare Octane con:
 
 - configurazioni e gamedata serviti da `/nitro-sec/file`;
 - API `/api/*` cifrate dal wrapper runtime;
@@ -11,9 +11,9 @@ Negli esempi usa i tuoi domini reali al posto di:
 - `https://hotel.example.com`
 - `https://nitro.example.com:2096`
 
-## 1. Build Nitro
+## 1. Build Octane
 
-Nel repo `Nitro-V3`:
+Nel repo `octane`:
 
 ```bash
 yarn build
@@ -40,7 +40,7 @@ src/
 File:
 
 ```txt
-Nitro-V3/dist/configuration/client-mode.json
+octane/dist/configuration/client-mode.json
 ```
 
 Configurazione produzione secure:
@@ -52,7 +52,7 @@ Configurazione produzione secure:
     "secureApiEnabled": true,
     "apiBaseUrl": "https://nitro.example.com:2096",
     "plainConfigBaseUrl": "https://hotel.example.com/configuration/",
-    "plainGamedataBaseUrl": "https://hotel.example.com/client/nitro/gamedata/"
+    "plainGamedataBaseUrl": "https://hotel.example.com/client/octane/gamedata/"
 }
 ```
 
@@ -69,7 +69,7 @@ Significato:
 File:
 
 ```txt
-Nitro-V3/dist/configuration/renderer-config.json
+octane/dist/configuration/renderer-config.json
 ```
 
 Valori importanti:
@@ -104,7 +104,7 @@ Se non usi ancora WebSocket crypto, metti:
 File:
 
 ```txt
-Nitro-V3/dist/configuration/ui-config.json
+octane/dist/configuration/ui-config.json
 ```
 
 Qui puoi lasciare immagini e camera su URL statici normali:
@@ -139,8 +139,8 @@ crypto.ws.enabled=1
 
 nitro.secure.assets.enabled=true
 nitro.secure.api.enabled=true
-nitro.secure.config.root=C:/inetpub/wwwroot/hotel/nitro/configuration
-nitro.secure.gamedata.root=C:/inetpub/wwwroot/hotel/nitro/client/nitro/gamedata
+nitro.secure.config.root=C:/inetpub/wwwroot/hotel/octane/configuration
+nitro.secure.gamedata.root=C:/inetpub/wwwroot/hotel/octane/client/octane/gamedata
 nitro.secure.master_key=change-this-to-a-long-random-secret
 
 login.remember.enabled=true
@@ -212,7 +212,7 @@ Per debug rapido, cambia solo `client-mode.json`:
     "secureApiEnabled": false,
     "apiBaseUrl": "https://nitro.example.com:2096",
     "plainConfigBaseUrl": "https://hotel.example.com/configuration/",
-    "plainGamedataBaseUrl": "https://hotel.example.com/client/nitro/gamedata/"
+    "plainGamedataBaseUrl": "https://hotel.example.com/client/octane/gamedata/"
 }
 ```
 
@@ -223,7 +223,7 @@ Poi fai hard refresh.
 File:
 
 ```txt
-Nitro-V3/dist/configuration/bootstrap.js
+octane/dist/configuration/bootstrap.js
 ```
 
 Questo è il primo loader quando usi la modalità secure esterna.
@@ -269,7 +269,7 @@ Quindi `asset-loader.js` deve esistere sempre nella cartella `configuration`.
 File:
 
 ```txt
-Nitro-V3/dist/configuration/asset-loader.js
+octane/dist/configuration/asset-loader.js
 ```
 
 Questo loader carica il bundle vero:
@@ -359,7 +359,7 @@ https://nitro.example.com:2096/nitro-sec/file?kind=config&file=...
 Quindi l'emulatore li legge da:
 
 ```ini
-nitro.secure.config.root=C:/inetpub/wwwroot/hotel/nitro/configuration
+nitro.secure.config.root=C:/inetpub/wwwroot/hotel/octane/configuration
 ```
 
 Se aggiungi nuovi file JSON/JS in `configuration` e vuoi proteggerli, devono essere richiesti passando dal secure endpoint o caricati tramite `bootstrap.js`.

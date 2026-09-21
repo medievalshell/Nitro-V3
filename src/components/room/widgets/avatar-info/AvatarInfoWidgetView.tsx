@@ -8,7 +8,7 @@ import {
     RoomEngineObjectEvent,
     RoomEnterEffect,
     RoomSessionDanceEvent
-} from '@nitrots/nitro-renderer';
+} from '@octane/renderer';
 import { FC, useEffect, useState } from 'react';
 import {
     AvatarInfoFurni,
@@ -19,7 +19,7 @@ import {
     RoomWidgetUpdateRentableBotChatEvent
 } from '../../../../api';
 import { Column, LayoutFurniIconImageView } from '../../../../common';
-import { useAvatarInfoWidget, useNitroEvent, useRoom, useUiEvent } from '../../../../hooks';
+import { useAvatarInfoWidget, useOctaneEvent, useRoom, useUiEvent } from '../../../../hooks';
 import { AvatarInfoPetTrainingPanelView } from './AvatarInfoPetTrainingPanelView';
 import { AvatarInfoRentableBotChatView } from './AvatarInfoRentableBotChatView';
 import { AvatarInfoUseProductConfirmView } from './AvatarInfoUseProductConfirmView';
@@ -66,21 +66,21 @@ export const AvatarInfoWidgetView: FC<{}> = (props) => {
     const updateAvatarClickControl = (updates: { suppressMenuUntil?: number; suppressRotateUntil?: number }) => {
         const globalScope = globalThis as any;
 
-        if (!globalScope.__nitroAvatarClickControl) {
-            globalScope.__nitroAvatarClickControl = {
+        if (!globalScope.__octaneAvatarClickControl) {
+            globalScope.__octaneAvatarClickControl = {
                 suppressMenuUntil: 0,
                 suppressRotateUntil: 0
             };
         }
 
-        Object.assign(globalScope.__nitroAvatarClickControl, updates);
+        Object.assign(globalScope.__octaneAvatarClickControl, updates);
     };
 
-    useNitroEvent<RoomEngineEvent>(RoomEngineEvent.NORMAL_MODE, (event) => {
+    useOctaneEvent<RoomEngineEvent>(RoomEngineEvent.NORMAL_MODE, (event) => {
         if (isGameMode) setGameMode(false);
     });
 
-    useNitroEvent<RoomEngineEvent>(RoomEngineEvent.GAME_MODE, (event) => {
+    useOctaneEvent<RoomEngineEvent>(RoomEngineEvent.GAME_MODE, (event) => {
         if (!isGameMode) setGameMode(true);
     });
 
@@ -94,7 +94,7 @@ export const AvatarInfoWidgetView: FC<{}> = (props) => {
         return () => query.removeEventListener('change', updateTouchLayout);
     }, []);
 
-    useNitroEvent<RoomSessionDanceEvent>(RoomSessionDanceEvent.RSDE_DANCE, (event) => {
+    useOctaneEvent<RoomSessionDanceEvent>(RoomSessionDanceEvent.RSDE_DANCE, (event) => {
         if (event.roomIndex !== roomSession.ownRoomIndex) return;
 
         setIsDancing(event.danceId !== 0);
@@ -102,7 +102,7 @@ export const AvatarInfoWidgetView: FC<{}> = (props) => {
 
     useUiEvent<RoomWidgetUpdateRentableBotChatEvent>(RoomWidgetUpdateRentableBotChatEvent.UPDATE_CHAT, (event) => setRentableBotChatEvent(event));
 
-    useNitroEvent<RoomEngineObjectEvent>(RoomEngineObjectEvent.REQUEST_MANIPULATION, (event) => {
+    useOctaneEvent<RoomEngineObjectEvent>(RoomEngineObjectEvent.REQUEST_MANIPULATION, (event) => {
         if (!(avatarInfo instanceof AvatarInfoFurni)) return;
         if (event.category !== avatarInfo.category || event.objectId !== avatarInfo.id) return;
 
@@ -216,7 +216,7 @@ export const AvatarInfoWidgetView: FC<{}> = (props) => {
 
                     if (!mobileFurniDetailsOpen) {
                         return (
-                            <button className="nitro-mobile-furni-infostand-trigger" type="button" onClick={() => setMobileFurniDetailsOpen(true)}>
+                            <button className="octane-mobile-furni-infostand-trigger" type="button" onClick={() => setMobileFurniDetailsOpen(true)}>
                                 <LayoutFurniIconImageView productType={info.productType} productClassId={info.spriteId} />
                             </button>
                         );
@@ -226,26 +226,6 @@ export const AvatarInfoWidgetView: FC<{}> = (props) => {
                 return <InfoStandWidgetFurniView avatarInfo={avatarInfo as AvatarInfoFurni} onClose={() => setAvatarInfo(null)} />;
             case AvatarInfoUser.OWN_USER:
             case AvatarInfoUser.PEER:
-                if (isTouchLayout) {
-                    const info = avatarInfo as AvatarInfoUser;
-                    const figure = encodeURIComponent(info.figure || '');
-                    const avatarHeadUrl = `https://www.habbo.com/habbo-imaging/avatarimage?figure=${figure}&direction=2&head_direction=2&gesture=sml&size=m&headonly=1`;
-
-                    if (!mobileUserDetailsOpen) {
-                        return (
-                            <button
-                                className="nitro-mobile-furni-infostand-trigger nitro-mobile-user-infostand-trigger"
-                                type="button"
-                                onClick={() => setMobileUserDetailsOpen(true)}
-                            >
-                                <div className="nitro-mobile-user-infostand-avatar">
-                                    <img className="nitro-mobile-user-infostand-avatar-image" src={avatarHeadUrl} alt={info.name} draggable={false} />
-                                </div>
-                            </button>
-                        );
-                    }
-                }
-
                 return <InfoStandWidgetUserView avatarInfo={avatarInfo as AvatarInfoUser} setAvatarInfo={setAvatarInfo} onClose={() => setAvatarInfo(null)} />;
             case AvatarInfoUser.BOT:
                 return <InfoStandWidgetBotView avatarInfo={avatarInfo as AvatarInfoUser} onClose={() => setAvatarInfo(null)} />;

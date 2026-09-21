@@ -11,8 +11,9 @@ import {
     RoomSettingsComposer,
     RoomShakingEffect,
     RoomZoomEvent,
-    TextureUtils
-} from '@nitrots/nitro-renderer';
+    TextureUtils,
+    TriggerHabbiconComposer
+} from '@octane/renderer';
 import { useCallback } from 'react';
 import { ChatMessageTypeEnum, GetClubMemberLevel, GetConfigurationValue, LocalizeText, SendMessageComposer } from '../../../api';
 import { useNotification } from '../../notification';
@@ -35,7 +36,7 @@ import { useRoom } from '../useRoom';
  * to useChatInputState.
  */
 export const useChatInputActions = () => {
-    const { showNitroAlert = null, showConfirm = null } = useNotification();
+    const { showOctaneAlert = null, showConfirm = null } = useNotification();
     const { settings, translateOutgoing, enqueueOutgoingTranslation } = useTranslation();
     const { roomSession = null } = useRoom();
 
@@ -116,15 +117,25 @@ export const useChatInputActions = () => {
                         roomSession?.sendSignMessage(parseInt(secondPart));
 
                         return null;
+                    case ':habbicon': {
+                        const habbiconId = parseInt(secondPart);
+
+                        if(Number.isFinite(habbiconId) && habbiconId > 0) SendMessageComposer(new TriggerHabbiconComposer(habbiconId));
+
+                        return null;
+                    }
                     case ':iddqd':
                     case ':flip':
                         if (roomSession) GetEventDispatcher().dispatchEvent(new RoomZoomEvent(roomSession.roomId, -1, true));
 
                         return null;
-                    case ':zoom':
-                        if (roomSession) GetEventDispatcher().dispatchEvent(new RoomZoomEvent(roomSession.roomId, parseInt(secondPart)));
+                    case ':zoom': {
+                        const zoomLevel = parseInt(secondPart);
+
+                        if (roomSession && Number.isFinite(zoomLevel)) GetEventDispatcher().dispatchEvent(new RoomZoomEvent(roomSession.roomId, zoomLevel));
 
                         return null;
+                    }
                     case ':screenshot':
                         if (!roomSession) return null;
 
@@ -199,9 +210,10 @@ export const useChatInputActions = () => {
                         return null;
                     }
                     case ':client':
+                    case ':octane':
                     case ':nitro':
                     case ':billsonnn':
-                        showNitroAlert();
+                        showOctaneAlert();
                         return null;
                     case ':settings':
                         if (roomSession && (roomSession.isRoomOwner || GetSessionDataManager().isModerator)) {
@@ -261,7 +273,7 @@ export const useChatInputActions = () => {
 
             return null;
         },
-        [roomSession, settings, translateOutgoing, enqueueOutgoingTranslation, showConfirm, showNitroAlert]
+        [roomSession, settings, translateOutgoing, enqueueOutgoingTranslation, showConfirm, showOctaneAlert]
     );
 
     return { sendChat };

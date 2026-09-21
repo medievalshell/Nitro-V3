@@ -5,9 +5,9 @@ import {
     BotRemovedFromInventoryEvent,
     CreateLinkEvent,
     GetBotInventoryComposer
-} from '@nitrots/nitro-renderer';
+} from '@octane/renderer';
 import { useEffect, useState } from 'react';
-import { useBetween } from 'use-between';
+import { registerSharedHook, useSharedHook } from '@/state/useSharedHook';
 import { cancelRoomObjectPlacement, getPlacingItemId, IBotItem, SendMessageComposer, UnseenItemCategory } from '../../api';
 import { useMessageEvent } from '../events';
 import { useSharedVisibility } from '../useSharedVisibility';
@@ -49,9 +49,11 @@ const useInventoryBotsState = () => {
                 if (index === -1 || !botItem) continue;
 
                 if (getPlacingItemId() === botItem.botData.id) {
-                    cancelRoomObjectPlacement();
+                    queueMicrotask(() => {
+                        cancelRoomObjectPlacement();
 
-                    CreateLinkEvent('inventory/open');
+                        CreateLinkEvent('inventory/open');
+                    });
                 }
 
                 newValue.splice(index, 1);
@@ -102,9 +104,11 @@ const useInventoryBotsState = () => {
             newValue.splice(index, 1);
 
             if (getPlacingItemId() === parser.itemId) {
-                cancelRoomObjectPlacement();
+                queueMicrotask(() => {
+                    cancelRoomObjectPlacement();
 
-                CreateLinkEvent('inventory/show');
+                    CreateLinkEvent('inventory/show');
+                });
             }
 
             return newValue;
@@ -144,4 +148,6 @@ const useInventoryBotsState = () => {
     return { botItems, selectedBot, setSelectedBot, activate, deactivate };
 };
 
-export const useInventoryBots = () => useBetween(useInventoryBotsState);
+export const useInventoryBots = () => useSharedHook(useInventoryBotsState);
+
+registerSharedHook(useInventoryBotsState);

@@ -1,8 +1,8 @@
-import { GetGuestRoomResultEvent, NewConsoleMessageEvent, RoomInviteEvent, RoomSessionEvent } from '@nitrots/nitro-renderer';
+import { GetGuestRoomResultEvent, NewConsoleMessageEvent, RoomInviteEvent, RoomSessionEvent } from '@octane/renderer';
 import { useState } from 'react';
-import { useBetween } from 'use-between';
+import { registerSharedHook, useSharedHook } from '@/state/useSharedHook';
 import { ChatEntryType, ChatHistoryCurrentDate, IChatEntry, IRoomHistoryEntry, MessengerHistoryCurrentDate } from '../../api';
-import { useMessageEvent, useNitroEvent } from '../events';
+import { useMessageEvent, useOctaneEvent } from '../events';
 import { useLocalStorage } from '../useLocalStorage';
 
 const ROOM_HISTORY_MAX = 10;
@@ -11,6 +11,18 @@ const MESSENGER_HISTORY_MAX = 1000;
 
 let CHAT_HISTORY_COUNTER: number = 0;
 let MESSENGER_HISTORY_COUNTER: number = 0;
+
+export const ClearStoredChatHistory = () => {
+    CHAT_HISTORY_COUNTER = 0;
+    MESSENGER_HISTORY_COUNTER = 0;
+
+    try {
+        window.localStorage.removeItem('chatHistory');
+        window.localStorage.removeItem('roomHistory');
+        window.localStorage.removeItem('messengerHistory');
+        window.localStorage.removeItem('needsRoomInsert');
+    } catch {}
+};
 
 /**
  * Project a list of chat entries to the slim shape we want to persist in
@@ -93,7 +105,7 @@ const useChatHistoryState = () => {
         });
     };
 
-    useNitroEvent<RoomSessionEvent>(RoomSessionEvent.STARTED, (event) => setNeedsRoomInsert(true));
+    useOctaneEvent<RoomSessionEvent>(RoomSessionEvent.STARTED, (event) => setNeedsRoomInsert(true));
 
     useMessageEvent<GetGuestRoomResultEvent>(GetGuestRoomResultEvent, (event) => {
         if (!needsRoomInsert) return;
@@ -152,4 +164,6 @@ const useChatHistoryState = () => {
     return { addChatEntry, updateChatEntry, clearChatHistory, chatHistory, roomHistory, messengerHistory };
 };
 
-export const useChatHistory = () => useBetween(useChatHistoryState);
+export const useChatHistory = () => useSharedHook(useChatHistoryState);
+
+registerSharedHook(useChatHistoryState);

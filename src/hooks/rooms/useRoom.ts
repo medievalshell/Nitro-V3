@@ -1,13 +1,14 @@
 import {
     ColorConverter,
+    GetDesiredResolution,
     GetRenderer,
     GetRoomEngine,
     GetStage,
     HanditemBlockStateMessageEvent,
     IRoomSession,
-    NitroAdjustmentFilter,
-    NitroSprite,
-    NitroTexture,
+    OctaneAdjustmentFilter,
+    OctaneSprite,
+    OctaneTexture,
     RoomBackgroundColorEvent,
     RoomEngineEvent,
     RoomEngineObjectEvent,
@@ -17,11 +18,12 @@ import {
     RoomObjectHSLColorEnabledEvent,
     RoomObjectOperationType,
     RoomSessionEvent,
+    WiredClickSettingsEvent,
     RoomVariableEnum,
     Vector3d
-} from '@nitrots/nitro-renderer';
+} from '@octane/renderer';
 import { useEffect, useState } from 'react';
-import { useBetween } from 'use-between';
+import { registerSharedHook, useSharedHook } from '@/state/useSharedHook';
 import {
     CanManipulateFurniture,
     DispatchUiEvent,
@@ -33,7 +35,8 @@ import {
     SetActiveRoomId,
     StartRoomSession
 } from '../../api';
-import { useMessageEvent, useNitroEvent, useUiEvent } from '../events';
+import { useMessageEvent, useOctaneEvent, useUiEvent } from '../events';
+import { useWiredFurniOpacity } from './useWiredFurniOpacity';
 
 const getViewportSize = () => {
     const viewport = window.visualViewport;
@@ -47,9 +50,11 @@ const getViewportSize = () => {
 const useRoomState = () => {
     const [roomSession, setRoomSession] = useState<IRoomSession>(null);
     const [isHandItemBlocked, setIsHandItemBlocked] = useState(false);
-    const [roomBackground, setRoomBackground] = useState<NitroSprite>(null);
-    const [roomFilter, setRoomFilter] = useState<NitroAdjustmentFilter>(null);
+    const [roomBackground, setRoomBackground] = useState<OctaneSprite>(null);
+    const [roomFilter, setRoomFilter] = useState<OctaneAdjustmentFilter>(null);
     const [originalRoomBackgroundColor, setOriginalRoomBackgroundColor] = useState(0);
+
+    useWiredFurniOpacity(roomSession?.roomId ?? 0);
 
     const updateRoomBackgroundColor = (hue: number, saturation: number, lightness: number, original: boolean = false) => {
         if (!roomBackground) return;
@@ -87,14 +92,14 @@ const useRoomState = () => {
         roomBackground.tint = originalRoomBackgroundColor;
     });
 
-    useNitroEvent<RoomObjectHSLColorEnabledEvent>(RoomObjectHSLColorEnabledEvent.ROOM_BACKGROUND_COLOR, (event) => {
+    useOctaneEvent<RoomObjectHSLColorEnabledEvent>(RoomObjectHSLColorEnabledEvent.ROOM_BACKGROUND_COLOR, (event) => {
         if (RoomId.isRoomPreviewerId(event.roomId)) return;
 
         if (event.enable) updateRoomBackgroundColor(event.hue, event.saturation, event.lightness, true);
         else updateRoomBackgroundColor(0, 0, 0, true);
     });
 
-    useNitroEvent<RoomBackgroundColorEvent>(RoomBackgroundColorEvent.ROOM_COLOR, (event) => {
+    useOctaneEvent<RoomBackgroundColorEvent>(RoomBackgroundColorEvent.ROOM_COLOR, (event) => {
         if (RoomId.isRoomPreviewerId(event.roomId)) return;
 
         let color = 0x000000;
@@ -108,7 +113,7 @@ const useRoomState = () => {
         updateRoomFilter(ColorConverter.hslToRGB((ColorConverter.rgbToHSL(color) & 0xffff00) + brightness));
     });
 
-    useNitroEvent<RoomEngineEvent>([RoomEngineEvent.INITIALIZED, RoomEngineEvent.DISPOSED], (event) => {
+    useOctaneEvent<RoomEngineEvent>([RoomEngineEvent.INITIALIZED, RoomEngineEvent.DISPOSED], (event) => {
         if (RoomId.isRoomPreviewerId(event.roomId)) return;
 
         const session = GetRoomSession();
@@ -128,7 +133,7 @@ const useRoomState = () => {
         }
     });
 
-    useNitroEvent<RoomSessionEvent>([RoomSessionEvent.CREATED, RoomSessionEvent.ENDED], (event) => {
+    useOctaneEvent<RoomSessionEvent>([RoomSessionEvent.CREATED, RoomSessionEvent.ENDED], (event) => {
         switch (event.type) {
             case RoomSessionEvent.CREATED:
                 StartRoomSession(event.session);
@@ -136,8 +141,20 @@ const useRoomState = () => {
             case RoomSessionEvent.ENDED:
                 setRoomSession(null);
                 setIsHandItemBlocked(false);
+                // A wired click setting belongs to the room that sent it.
+                GetRoomEngine().setWiredClickSettings(0, 0);
                 return;
         }
+    });
+
+    // The room's wired click-settings box: what this player's clicks on avatars and furni do
+    // (walk behind, pass through). The renderer applies it and forgets it with the room.
+    useMessageEvent<WiredClickSettingsEvent>(WiredClickSettingsEvent, (event) => {
+        const parser = event.getParser();
+
+        if (!parser) return;
+
+        GetRoomEngine().setWiredClickSettings(parser.userOption, parser.furniOption);
     });
 
     useMessageEvent<HanditemBlockStateMessageEvent>(HanditemBlockStateMessageEvent, (event) => {
@@ -150,7 +167,7 @@ const useRoomState = () => {
         setIsHandItemBlocked(parser.stateData.blocked);
     });
 
-    useNitroEvent<RoomEngineObjectEvent>(
+    useOctaneEvent<RoomEngineObjectEvent>(
         [
             RoomEngineObjectEvent.SELECTED,
             RoomEngineObjectEvent.DESELECTED,
@@ -272,8 +289,8 @@ const useRoomState = () => {
 
         if (!displayObject || !canvas) return;
 
-        const background = new NitroSprite(NitroTexture.WHITE);
-        const filter = new NitroAdjustmentFilter();
+        const background = new OctaneSprite(OctaneTexture.WHITE);
+        const filter = new OctaneAdjustmentFilter();
         const master = canvas.master;
 
         background.tint = 0;
@@ -317,7 +334,7 @@ const useRoomState = () => {
             const offsetX = canvas.screenOffsetX - (newWidth - canvas.width) / 2;
             const offsetY = canvas.screenOffsetY - (newHeight - canvas.height) / 2;
 
-            renderer.resize(newWidth, newHeight, window.devicePixelRatio);
+            renderer.resize(newWidth, newHeight, GetDesiredResolution());
 
             background.width = newWidth;
             background.height = newHeight;
@@ -347,4 +364,6 @@ const useRoomState = () => {
     return { roomSession, isHandItemBlocked };
 };
 
-export const useRoom = () => useBetween(useRoomState);
+export const useRoom = () => useSharedHook(useRoomState);
+
+registerSharedHook(useRoomState);

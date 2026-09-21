@@ -1,9 +1,9 @@
-import { RoomDeleteComposer, RoomSettingsSaveErrorEvent, RoomSettingsSaveErrorParser } from '@nitrots/nitro-renderer';
+import { RoomDeleteComposer, RoomSettingsSaveErrorEvent, RoomSettingsSaveErrorParser, YouTubeRoomSettingsComposer, YouTubeRoomSettingsEvent } from '@octane/renderer';
 import { FC, useEffect, useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
-import { CreateLinkEvent, GetMaxVisitorsList, IRoomData, LocalizeText, SendMessageComposer } from '../../../../api';
+import { CreateLinkEvent, GetMaxVisitorsList, getYoutubeRoomEnabled, IRoomData, LocalizeText, SendMessageComposer, setYoutubeRoomEnabled } from '../../../../api';
 import { Column, Flex, Text } from '../../../../common';
-import { useMessageEvent, useNavigatorData, useNotification } from '../../../../hooks';
+import { useMessageEvent, useNavigatorData, useNotification, useSoundboard } from '../../../../hooks';
 
 const ROOM_NAME_MIN_LENGTH = 3;
 const ROOM_NAME_MAX_LENGTH = 60;
@@ -24,8 +24,20 @@ export const NavigatorRoomSettingsBasicTabView: FC<NavigatorRoomSettingsTabViewP
     const [roomTag2, setRoomTag2] = useState<string>('');
     const [tagIndex, setTagIndex] = useState(0);
     const [typeError, setTypeError] = useState<string>('');
+    const [youtubeEnabled, setYoutubeEnabled] = useState(getYoutubeRoomEnabled());
     const { showConfirm = null } = useNotification();
     const { categories } = useNavigatorData();
+    const { enabled: soundboardEnabled, setRoomEnabled: setSoundboardEnabled } = useSoundboard();
+
+    useMessageEvent<YouTubeRoomSettingsEvent>(YouTubeRoomSettingsEvent, (event) => {
+        setYoutubeEnabled(event.getParser().youtubeEnabled);
+    });
+
+    const toggleYouTube = (enabled: boolean) => {
+        setYoutubeEnabled(enabled);
+        setYoutubeRoomEnabled(enabled);
+        SendMessageComposer(new YouTubeRoomSettingsComposer(enabled));
+    };
 
     useMessageEvent<RoomSettingsSaveErrorEvent>(RoomSettingsSaveErrorEvent, (event) => {
         const parser = event.getParser();
@@ -62,16 +74,16 @@ export const NavigatorRoomSettingsBasicTabView: FC<NavigatorRoomSettingsTabViewP
         );
     };
 
-    const saveRoomName = () => {
-        if (roomName === roomData.roomName || roomName.length < ROOM_NAME_MIN_LENGTH || roomName.length > ROOM_NAME_MAX_LENGTH) return;
+    const saveRoomName = (value = roomName) => {
+        if (value === roomData.roomName || value.length < ROOM_NAME_MIN_LENGTH || value.length > ROOM_NAME_MAX_LENGTH) return;
 
-        handleChange('name', roomName);
+        handleChange('name', value);
     };
 
-    const saveRoomDescription = () => {
-        if (roomDescription === roomData.roomDescription || roomDescription.length > DESC_MAX_LENGTH) return;
+    const saveRoomDescription = (value = roomDescription) => {
+        if (value === roomData.roomDescription || value.length > DESC_MAX_LENGTH) return;
 
-        handleChange('description', roomDescription);
+        handleChange('description', value);
     };
 
     const saveTags = (index: number) => {
@@ -102,7 +114,10 @@ export const NavigatorRoomSettingsBasicTabView: FC<NavigatorRoomSettingsTabViewP
                     value={roomName}
                     maxLength={ROOM_NAME_MAX_LENGTH}
                     onChange={(event) => setRoomName(event.target.value)}
-                    onBlur={saveRoomName}
+                    onBlur={(event) => saveRoomName(event.currentTarget.value)}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter') saveRoomName(event.currentTarget.value);
+                    }}
                 />
                 {roomName.length < ROOM_NAME_MIN_LENGTH && (
                     <Text bold small variant="danger">
@@ -117,7 +132,7 @@ export const NavigatorRoomSettingsBasicTabView: FC<NavigatorRoomSettingsTabViewP
                     value={roomDescription}
                     maxLength={DESC_MAX_LENGTH}
                     onChange={(event) => setRoomDescription(event.target.value)}
-                    onBlur={saveRoomDescription}
+                    onBlur={(event) => saveRoomDescription(event.currentTarget.value)}
                 />
             </Column>
             <Column gap={1}>
@@ -208,6 +223,7 @@ export const NavigatorRoomSettingsBasicTabView: FC<NavigatorRoomSettingsTabViewP
                 />
                 <Text>{LocalizeText('navigator.roomsettings.allow_walk_through')}</Text>
             </Flex>
+            {/* Polaris-only. Keep when matching Habbo AIR chrome. */}
             <Flex alignItems="center" gap={1}>
                 <input
                     className="form-check-input"
@@ -216,6 +232,26 @@ export const NavigatorRoomSettingsBasicTabView: FC<NavigatorRoomSettingsTabViewP
                     onChange={(event) => handleChange('allow_underpass', event.target.checked)}
                 />
                 <Text>{LocalizeText('navigator.roomsettings.allow_underpass')}</Text>
+            </Flex>
+            <Flex alignItems="center" gap={1}>
+                <input
+                    aria-label={LocalizeText('widget.room.youtube.shared')}
+                    className="form-check-input"
+                    type="checkbox"
+                    checked={youtubeEnabled}
+                    onChange={(event) => toggleYouTube(event.target.checked)}
+                />
+                <Text>{LocalizeText('widget.room.youtube.shared')}</Text>
+            </Flex>
+            <Flex alignItems="center" gap={1}>
+                <input
+                    aria-label={LocalizeText('soundboard.room.allow')}
+                    className="form-check-input"
+                    type="checkbox"
+                    checked={soundboardEnabled}
+                    onChange={(event) => setSoundboardEnabled(event.target.checked)}
+                />
+                <Text>{LocalizeText('soundboard.room.allow')}</Text>
             </Flex>
             <Flex pointer alignItems="center" justifyContent="center" gap={1} onClick={deleteRoom}>
                 <FaTimes className="fa-icon shrink-0 text-[#a81a12]" />

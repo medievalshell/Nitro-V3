@@ -169,7 +169,7 @@ export const HousekeepingDashboardTab: FC = () => {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="rounded-full bg-emerald-100 p-2 flex items-center justify-center">
-                                    <span className="nitro-icon nitro-icon-hk-hero icon-modtools" />
+                                    <span className="octane-icon octane-icon-hk-hero icon-modtools" />
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider opacity-60 font-semibold">
@@ -240,7 +240,7 @@ export const HousekeepingDashboardTab: FC = () => {
                                     }
                                 }}
                                 placeholder={LocalizeText('housekeeping.hotel.alert.placeholder')}
-                                className="grow rounded border border-amber-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400 placeholder:text-zinc-400"
+                                className="grow rounded border border-amber-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400 placeholder:text-black placeholder:italic"
                                 maxLength={280}
                             />
                             <Button

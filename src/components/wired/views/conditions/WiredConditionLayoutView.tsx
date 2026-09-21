@@ -6,6 +6,8 @@ import { WiredConditionActorIsOnFurniView } from './WiredConditionActorIsOnFurni
 import { WiredConditionActorIsTeamMemberView } from './WiredConditionActorIsTeamMemberView';
 import { WiredConditionActorIsWearingBadgeView } from './WiredConditionActorIsWearingBadgeView';
 import { WiredConditionActorIsWearingEffectView } from './WiredConditionActorIsWearingEffectView';
+import { WiredConditionChestHasItemsView } from './WiredConditionChestHasItemsView';
+import { WiredConditionChestHasItemTypeView } from './WiredConditionChestHasItemTypeView';
 import { WiredConditionCounterTimeMatchesView } from './WiredConditionCounterTimeMatchesView';
 import { WiredConditionDateRangeView } from './WiredConditionDateRangeView';
 import { WiredConditionFurniHasAvatarOnView } from './WiredConditionFurniHasAvatarOnView';
@@ -18,13 +20,22 @@ import { WiredConditionHasVariableView } from './WiredConditionHasVariableView';
 import { WiredConditionMatchDateView } from './WiredConditionMatchDateView';
 import { WiredConditionMatchTimeView } from './WiredConditionMatchTimeView';
 import { WiredConditionMovementValidationView } from './WiredConditionMovementValidationView';
+import { WiredConditionNoBattleBanzaiView } from './WiredConditionNoBattleBanzaiView';
 import { WiredConditionSelectionQuantityView } from './WiredConditionSelectionQuantityView';
 import { WiredConditionTeamHasRankView } from './WiredConditionTeamHasRankView';
 import { WiredConditionTeamHasScoreView } from './WiredConditionTeamHasScoreView';
 import { WiredConditionTimeElapsedLessView } from './WiredConditionTimeElapsedLessView';
 import { WiredConditionTimeElapsedMoreView } from './WiredConditionTimeElapsedMoreView';
+import { WiredConditionFurniOpacityView } from './WiredConditionFurniOpacityView';
+import { WiredConditionUserCooldownView } from './WiredConditionUserCooldownView';
+import { WiredConditionUserHighscorePointsView } from './WiredConditionUserHighscorePointsView';
+import { WiredConditionUserLevelView } from './WiredConditionUserLevelView';
+import { WiredConditionUserOnceView } from './WiredConditionUserOnceView';
+import { WiredConditionUserRankView } from './WiredConditionUserRankView';
 import { WiredConditionTriggererMatchView } from './WiredConditionTriggererMatchView';
+import { WiredConditionTriggerFurniAdjacentStateView } from './WiredConditionTriggerFurniAdjacentStateView';
 import { WiredConditionUserCountInRoomView } from './WiredConditionUserCountInRoomView';
+import { WiredConditionUserOnFurniWithStateView } from './WiredConditionUserOnFurniWithStateView';
 import { WiredConditionUserPerformsActionView } from './WiredConditionUserPerformsActionView';
 import { WiredConditionVariableAgeMatchView } from './WiredConditionVariableAgeMatchView';
 import { WiredConditionVariableValueMatchView } from './WiredConditionVariableValueMatchView';
@@ -67,6 +78,30 @@ export const WiredConditionLayoutView = (code: number) => {
             return <WiredConditionActorIsWearingBadgeView />;
         case WiredConditionlayout.NOT_ACTOR_WEARS_BADGE:
             return <WiredConditionActorIsWearingBadgeView negative={true} />;
+        case WiredConditionlayout.USER_STATE:
+            return <WiredConditionActorIsWearingEffectView showEffect={false} />;
+        case WiredConditionlayout.NOT_USER_STATE:
+            return <WiredConditionActorIsWearingEffectView negative={true} showEffect={false} />;
+        case WiredConditionlayout.USER_AMOUNT:
+            return <WiredConditionTeamHasScoreView scoped={false} />;
+        case WiredConditionlayout.USER_ATTRIBUTE:
+            return <WiredConditionActorIsWearingBadgeView field={null} />;
+        case WiredConditionlayout.NOT_USER_ATTRIBUTE:
+            return <WiredConditionActorIsWearingBadgeView field={null} negative={true} />;
+        case WiredConditionlayout.USER_RANGE:
+            return <WiredConditionHasAltitudeView variant="userRange" />;
+        case WiredConditionlayout.FURNI_RANGE:
+            return <WiredConditionHasAltitudeView variant="furniRange" />;
+        case WiredConditionlayout.USER_LEVEL:
+            return <WiredConditionUserLevelView />;
+        case WiredConditionlayout.FURNI_PROPERTY:
+            return <WiredConditionHasAltitudeView variant="furniProperty" />;
+        case WiredConditionlayout.USER_TAG:
+            return <WiredConditionActorIsWearingBadgeView field="tag" />;
+        case WiredConditionlayout.NOT_USER_TAG:
+            return <WiredConditionActorIsWearingBadgeView field="tag" negative={true} />;
+        case WiredConditionlayout.USER_MOTTO:
+            return <WiredConditionActorIsWearingBadgeView field="motto" />;
         case WiredConditionlayout.ACTOR_IS_WEARING_EFFECT:
             return <WiredConditionActorIsWearingEffectView />;
         case WiredConditionlayout.NOT_ACTOR_WEARING_EFFECT:
@@ -114,6 +149,28 @@ export const WiredConditionLayoutView = (code: number) => {
             return <WiredConditionTeamHasScoreView />;
         case WiredConditionlayout.TEAM_HAS_RANK:
             return <WiredConditionTeamHasRankView />;
+        case WiredConditionlayout.NO_BATTLEBANZAI:
+            return <WiredConditionNoBattleBanzaiView />;
+        case WiredConditionlayout.USER_ON_FURNI_WITH_STATE:
+            return <WiredConditionUserOnFurniWithStateView />;
+        case WiredConditionlayout.TRG_FURNI_ADJACENT_STATE:
+            return <WiredConditionTriggerFurniAdjacentStateView />;
+        case WiredConditionlayout.CHEST_HAS_ITEMS:
+            return <WiredConditionChestHasItemsView />;
+        case WiredConditionlayout.CHEST_HAS_ITEM_TYPE:
+            return <WiredConditionChestHasItemTypeView />;
+        case WiredConditionlayout.USER_RANK:
+            return <WiredConditionUserRankView />;
+        case WiredConditionlayout.FURNI_OPACITY:
+            return <WiredConditionFurniOpacityView />;
+        case WiredConditionlayout.USER_COOLDOWN:
+            return <WiredConditionUserCooldownView />;
+        case WiredConditionlayout.USER_ONCE:
+            return <WiredConditionUserOnceView />;
+        case WiredConditionlayout.USER_DAILY:
+            return <WiredConditionUserOnceView daily={true} />;
+        case WiredConditionlayout.USER_HIGHSCORE_POINTS:
+            return <WiredConditionUserHighscorePointsView />;
     }
 
     return null;

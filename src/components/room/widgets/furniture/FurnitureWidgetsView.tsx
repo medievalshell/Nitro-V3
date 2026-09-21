@@ -4,10 +4,12 @@ import { FurnitureContextMenuView } from './context-menu/FurnitureContextMenuVie
 import { FurnitureAreaHideView } from './FurnitureAreaHideView';
 import { FurnitureBackgroundColorView } from './FurnitureBackgroundColorView';
 import { FurnitureBadgeDisplayView } from './FurnitureBadgeDisplayView';
+import { FurnitureChestView } from './FurnitureChestView';
 import { FurnitureCraftingView } from './FurnitureCraftingView';
 import { FurnitureDimmerView } from './FurnitureDimmerView';
 import { FurnitureExchangeCreditView } from './FurnitureExchangeCreditView';
 import { FurnitureExternalImageView } from './FurnitureExternalImageView';
+import { FurnitureFootballGateView } from './FurnitureFootballGateView';
 import { FurnitureFriendFurniView } from './FurnitureFriendFurniView';
 import { FurnitureGiftOpeningView } from './FurnitureGiftOpeningView';
 import { FurnitureHighScoreView } from './FurnitureHighScoreView';
@@ -33,6 +35,9 @@ export const FurnitureWidgetsView: FC<{}> = (props) => {
             <WidgetErrorBoundary name="FurnitureBadgeDisplay">
                 <FurnitureBadgeDisplayView />
             </WidgetErrorBoundary>
+            <WidgetErrorBoundary name="FurnitureChest">
+                <FurnitureChestView />
+            </WidgetErrorBoundary>
             <WidgetErrorBoundary name="FurnitureCrafting">
                 <FurnitureCraftingView />
             </WidgetErrorBoundary>
@@ -44,6 +49,9 @@ export const FurnitureWidgetsView: FC<{}> = (props) => {
             </WidgetErrorBoundary>
             <WidgetErrorBoundary name="FurnitureExternalImage">
                 <FurnitureExternalImageView />
+            </WidgetErrorBoundary>
+            <WidgetErrorBoundary name="FurnitureFootballGate">
+                <FurnitureFootballGateView />
             </WidgetErrorBoundary>
             <WidgetErrorBoundary name="FurnitureFriendFurni">
                 <FurnitureFriendFurniView />

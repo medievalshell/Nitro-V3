@@ -12,7 +12,7 @@ import {
     RoomSessionUserBadgesEvent,
     RoomSessionUserDataUpdateEvent,
     RoomSessionUserFigureUpdateEvent
-} from '@nitrots/nitro-renderer';
+} from '@octane/renderer';
 import { useEffect, useRef, useState } from 'react';
 import {
     AvatarInfoFurni,
@@ -28,7 +28,7 @@ import {
     RoomWidgetUpdateRoomObjectEvent,
     UseProductItem
 } from '../../../api';
-import { useNitroEvent, useUiEvent } from '../../events';
+import { useOctaneEvent, useUiEvent } from '../../events';
 import { useFriends } from '../../friends';
 import { useWired } from '../../wired';
 import { useObjectDeselectedEvent, useObjectRollOutEvent, useObjectRollOverEvent, useObjectSelectedEvent } from '../engine';
@@ -36,16 +36,16 @@ import { useRoom } from '../useRoom';
 import { applyFavouriteGroupUpdate, applyUserBadgesUpdate, applyUserFigureUpdate } from './avatarInfo.reducers';
 
 // Time window after a directional / move-state user click during
-// which the context menu must NOT open. Set on `globalThis.__nitroAvatarClickControl`
+// which the context menu must NOT open. Set on `globalThis.__octaneAvatarClickControl`
 // by the click-routing code in the room engine.
 const CLICK_USER_DEBOUNCE_MS = 120;
 
-interface NitroAvatarClickControl {
+interface OctaneAvatarClickControl {
     suppressMenuUntil: number;
 }
 
-const getAvatarClickControl = (): NitroAvatarClickControl | null =>
-    (globalThis as unknown as { __nitroAvatarClickControl?: NitroAvatarClickControl }).__nitroAvatarClickControl ?? null;
+const getAvatarClickControl = (): OctaneAvatarClickControl | null =>
+    (globalThis as unknown as { __octaneAvatarClickControl?: OctaneAvatarClickControl }).__octaneAvatarClickControl ?? null;
 
 const useAvatarInfoWidgetState = () => {
     const [avatarInfo, setAvatarInfo] = useState<IAvatarInfo>(null);
@@ -100,9 +100,17 @@ const useAvatarInfoWidgetState = () => {
     };
 
     const getObjectName = (objectId: number, category: number) => {
-        const name = AvatarInfoUtilities.getObjectName(objectId, category);
+        let name = AvatarInfoUtilities.getObjectName(objectId, category);
 
         if (!name) return;
+
+        // getObjectName has no friend context; enrich it so the click-to-show-name
+        // bubble also shows the friend relationship icon.
+        if (category === RoomObjectCategory.UNIT) {
+            const friend = friends.find((friend) => friend.id === name.id);
+
+            if (friend) name = new AvatarInfoName(name.roomIndex, name.category, name.id, name.name, name.userType, true, friend.relationshipStatus);
+        }
 
         setActiveNameBubble(name);
 
@@ -166,7 +174,7 @@ const useAvatarInfoWidgetState = () => {
         // roomSession.userDataManager.requestPetInfo(petData.id);
     };
 
-    useNitroEvent<RoomSessionUserDataUpdateEvent>(RoomSessionUserDataUpdateEvent.USER_DATA_UPDATED, (event) => {
+    useOctaneEvent<RoomSessionUserDataUpdateEvent>(RoomSessionUserDataUpdateEvent.USER_DATA_UPDATED, (event) => {
         if (!event.addedUsers.length) return;
 
         let addedNameBubbles: AvatarInfoName[] = [];
@@ -174,8 +182,12 @@ const useAvatarInfoWidgetState = () => {
         event.addedUsers.forEach((user) => {
             if (user.webID === GetSessionDataManager().userId || user.type !== RoomObjectType.USER) return;
 
-            if (friends.find((friend) => friend.id === user.webID)) {
-                addedNameBubbles.push(new AvatarInfoName(user.roomIndex, RoomObjectCategory.UNIT, user.webID, user.name, user.type, true));
+            const friend = friends.find((friend) => friend.id === user.webID);
+
+            if (friend) {
+                addedNameBubbles.push(
+                    new AvatarInfoName(user.roomIndex, RoomObjectCategory.UNIT, user.webID, user.name, user.type, true, friend.relationshipStatus)
+                );
             }
         });
 
@@ -196,7 +208,7 @@ const useAvatarInfoWidgetState = () => {
         });
     });
 
-    useNitroEvent<RoomSessionPetInfoUpdateEvent>(RoomSessionPetInfoUpdateEvent.PET_INFO, (event) => {
+    useOctaneEvent<RoomSessionPetInfoUpdateEvent>(RoomSessionPetInfoUpdateEvent.PET_INFO, (event) => {
         const petData = event.petInfo;
 
         if (!petData) return;
@@ -211,7 +223,7 @@ const useAvatarInfoWidgetState = () => {
         setPendingPetId(-1);
     });
 
-    useNitroEvent<RoomSessionPetStatusUpdateEvent>(RoomSessionPetStatusUpdateEvent.PET_STATUS_UPDATE, (event) => {
+    useOctaneEvent<RoomSessionPetStatusUpdateEvent>(RoomSessionPetStatusUpdateEvent.PET_STATUS_UPDATE, (event) => {
         /*     var _local_2:Boolean;
         var _local_3:Boolean;
         var _local_4:Boolean;
@@ -234,11 +246,11 @@ const useAvatarInfoWidgetState = () => {
             this._container.events.dispatchEvent(_local_7); */
     });
 
-    useNitroEvent<RoomEngineUseProductEvent>(RoomEngineUseProductEvent.USE_PRODUCT_FROM_INVENTORY, (event) => {
+    useOctaneEvent<RoomEngineUseProductEvent>(RoomEngineUseProductEvent.USE_PRODUCT_FROM_INVENTORY, (event) => {
         // this._Str_23199((k as RoomEngineUseProductEvent).inventoryStripId, (k as RoomEngineUseProductEvent).furnitureTypeId);
     });
 
-    useNitroEvent<RoomEngineUseProductEvent>(RoomEngineUseProductEvent.USE_PRODUCT_FROM_ROOM, (event) => {
+    useOctaneEvent<RoomEngineUseProductEvent>(RoomEngineUseProductEvent.USE_PRODUCT_FROM_ROOM, (event) => {
         const roomObject = GetRoomEngine().getRoomObject(roomSession.roomId, event.objectId, RoomObjectCategory.FLOOR);
 
         if (!roomObject || !IsOwnerOfFurniture(roomObject)) return;
@@ -293,21 +305,21 @@ const useAvatarInfoWidgetState = () => {
         if (useProductBubbles.length) setProductBubbles(useProductBubbles);
     });
 
-    useNitroEvent<RoomEngineObjectEvent>(RoomEngineObjectEvent.REQUEST_MANIPULATION, (event) => {
+    useOctaneEvent<RoomEngineObjectEvent>(RoomEngineObjectEvent.REQUEST_MANIPULATION, (event) => {
         if (!CanManipulateFurniture(roomSession, event.objectId, event.category)) return;
 
         setIsDecorating(true);
     });
 
-    useNitroEvent<RoomSessionUserBadgesEvent>(RoomSessionUserBadgesEvent.RSUBE_BADGES, (event) => {
+    useOctaneEvent<RoomSessionUserBadgesEvent>(RoomSessionUserBadgesEvent.RSUBE_BADGES, (event) => {
         setAvatarInfo((prev) => applyUserBadgesUpdate(prev, event));
     });
 
-    useNitroEvent<RoomSessionUserFigureUpdateEvent>(RoomSessionUserFigureUpdateEvent.USER_FIGURE, (event) => {
+    useOctaneEvent<RoomSessionUserFigureUpdateEvent>(RoomSessionUserFigureUpdateEvent.USER_FIGURE, (event) => {
         setAvatarInfo((prev) => applyUserFigureUpdate(prev, event));
     });
 
-    useNitroEvent<RoomSessionFavoriteGroupUpdateEvent>(RoomSessionFavoriteGroupUpdateEvent.FAVOURITE_GROUP_UPDATE, (event) => {
+    useOctaneEvent<RoomSessionFavoriteGroupUpdateEvent>(RoomSessionFavoriteGroupUpdateEvent.FAVOURITE_GROUP_UPDATE, (event) => {
         setAvatarInfo((prev) => applyFavouriteGroupUpdate(prev, event, (groupId) => GetSessionDataManager().getGroupBadge(groupId)));
     });
 
@@ -386,9 +398,9 @@ const useAvatarInfoWidgetState = () => {
             });
         };
 
-        window.addEventListener('nitro-localization-updated', refreshFurnitureInfo);
+        window.addEventListener('octane-localization-updated', refreshFurnitureInfo);
 
-        return () => window.removeEventListener('nitro-localization-updated', refreshFurnitureInfo);
+        return () => window.removeEventListener('octane-localization-updated', refreshFurnitureInfo);
     }, []);
 
     useEffect(() => {

@@ -4,22 +4,24 @@ import { describe, expect, it } from 'vitest';
 
 const readSource = (path: string) => readFileSync(join(process.cwd(), path), 'utf8');
 
-describe('UI CSS ownership', () => {
-    it('keeps static widget styles in css files instead of React style tags', () => {
+describe('UI CSS ownership', () =>
+{
+    it('keeps static widget styles in css files instead of React style tags', () =>
+    {
         const radioView = readSource('src/components/radio/RadioView.tsx');
         const toolbarView = readSource('src/components/toolbar/ToolbarView.tsx');
         const friendsBarView = readSource('src/components/friends/views/friends-bar/FriendsBarView.tsx');
         const wheelWinReveal = readSource('src/components/fortune-wheel/WheelWinReveal.tsx');
         const userIdentityView = readSource('src/common/UserIdentityView.tsx');
         const inventoryPrefixView = readSource('src/components/inventory/views/prefix/InventoryPrefixView.tsx');
-        const bubbleHiddenView = readSource('src/components/nitrobubblehidden/NitrobubbleHiddenView.tsx');
+        const bubbleHiddenView = readSource('src/components/octanebubblehidden/OctanebubbleHiddenView.tsx');
         const prefixEffectsCss = readSource('src/css/common/PrefixEffects.css');
         const chatsCss = readSource('src/css/chat/Chats.css');
 
         expect(radioView).not.toContain('RADIO_STYLES');
         expect(toolbarView).not.toContain('TOOLBAR_STYLES');
-        expect(toolbarView).not.toContain("backgroundPosition: '-25px -38px'");
-        expect(toolbarView).toContain('tb-avatar-head');
+        expect(toolbarView).not.toContain('backgroundPosition: \'-25px -38px\'');
+        expect(toolbarView).toContain('airMeMenu');
         expect(friendsBarView).not.toContain('FRIENDBAR_STYLES');
         expect(wheelWinReveal).not.toContain('<style>');
         expect(userIdentityView).not.toContain('<style>');
@@ -28,22 +30,20 @@ describe('UI CSS ownership', () => {
         expect(bubbleHiddenView).not.toContain('dangerouslySetInnerHTML');
         expect(prefixEffectsCss).toContain('@keyframes prefix-pulse');
         expect(prefixEffectsCss).toContain('@keyframes prefix-sparkle');
-        expect(chatsCss).toContain('.nitro-bubbles-hidden .newbubblehe');
+        expect(chatsCss).toContain('.octane-bubbles-hidden .newbubblehe');
     });
 
-    it('keeps window-specific classes from repainting shared card chrome', () => {
+    it('keeps window-specific classes from repainting shared card chrome', () =>
+    {
         const groupCreatorView = readSource('src/components/groups/views/GroupCreatorView.tsx');
         const catalogView = readSource('src/components/catalog/CatalogView.tsx');
         const catalogAdminOfferEditView = readSource('src/components/catalog/views/admin/CatalogAdminOfferEditView.tsx');
         const catalogAdminPageEditView = readSource('src/components/catalog/views/admin/CatalogAdminPageEditView.tsx');
         const catalogAdminModalView = readSource('src/components/catalog/views/admin/CatalogAdminModalView.tsx');
-        const catalogAdminQuickActionsView = readSource('src/components/catalog/views/admin/CatalogAdminQuickActionsView.tsx');
-        const catalogLayoutDefaultView = readSource('src/components/catalog/views/page/layout/CatalogLayoutDefaultView.tsx');
         const catalogLayoutColorGroupingView = readSource('src/components/catalog/views/page/layout/CatalogLayoutColorGroupingView.tsx');
         const catalogLayoutSoundMachineView = readSource('src/components/catalog/views/page/layout/CatalogLayoutSoundMachineView.tsx');
         const catalogLayoutVipBuyView = readSource('src/components/catalog/views/page/layout/CatalogLayoutVipBuyView.tsx');
         const catalogLayoutMarketplaceItemView = readSource('src/components/catalog/views/page/layout/marketplace/CatalogLayoutMarketplaceItemView.tsx');
-        const catalogLayoutPetView = readSource('src/components/catalog/views/page/layout/pets/CatalogLayoutPetView.tsx');
         const catalogLayoutTrophiesView = readSource('src/components/catalog/views/page/layout/CatalogLayoutTrophiesView.tsx');
         const getCatalogLayout = readSource('src/components/catalog/views/page/layout/GetCatalogLayout.tsx');
         const catalogCss = readSource('src/css/catalog/CatalogView.css');
@@ -63,9 +63,11 @@ describe('UI CSS ownership', () => {
         const wiredBaseView = readSource('src/components/wired/views/WiredBaseView.tsx');
         const friendsCategoryManagerView = readSource('src/components/friends/views/friends-list/FriendsCategoryManagerView.tsx');
         const friendsListView = readSource('src/components/friends/views/friends-list/FriendsListView.tsx');
+        const friendsListCss = readSource('src/components/friends/views/friends-list/FriendsListView.css');
         const friendsListRemoveConfirmationView = readSource('src/components/friends/views/friends-list/FriendsListRemoveConfirmationView.tsx');
         const friendsListRoomInviteView = readSource('src/components/friends/views/friends-list/FriendsListRoomInviteView.tsx');
         const friendsMessengerView = readSource('src/components/friends/views/messenger/FriendsMessengerView.tsx');
+        const friendsMessengerCss = readSource('src/components/friends/views/messenger/FriendsMessengerView.css');
         const vaultView = readSource('src/components/vault/VaultView.tsx');
         const helpView = readSource('src/components/help/HelpView.tsx');
         const userSettingsView = readSource('src/components/user-settings/UserSettingsView.tsx');
@@ -83,62 +85,66 @@ describe('UI CSS ownership', () => {
         expect(groupCreatorView).not.toContain('border border-[solid] border-[#283F5D]');
         expect(catalogView).not.toContain('habbo-swf-window');
         expect(catalogAdminModalView).toContain('createPortal');
-        expect(catalogAdminModalView).toContain('nitro-card-shell');
+        expect(catalogAdminModalView).toContain('octane-card-shell');
         expect(catalogAdminModalView).toContain('fixed inset-0 z-[1000]');
         expect(catalogAdminModalView).toContain('max-w-[calc(100vw-16px)]');
         expect(catalogAdminModalView).toContain('max-h-[calc(100vh-16px)]');
-        expect(catalogAdminModalView).toContain('overflow-y-auto');
+        expect(catalogAdminModalView).toContain('overflow-hidden');
+        expect(catalogCss).toContain('.octane-catalog-admin-form-scroll');
         expect(catalogAdminOfferEditView).not.toContain('style={ { zIndex: 1000 } }');
         expect(catalogAdminOfferEditView).not.toContain('border-2 border-card-grid-item-border rounded px-2 py-1 bg-white');
         expect(catalogAdminOfferEditView).not.toContain('bg-white rounded border-2 border-card-grid-item-border p-2.5');
-        expect(catalogAdminOfferEditView).toContain('nitro-catalog-admin-input');
-        expect(catalogAdminOfferEditView).toContain('nitro-catalog-admin-panel');
+        expect(catalogAdminOfferEditView).toContain('octane-catalog-admin-input');
+        expect(catalogAdminOfferEditView).toContain('octane-catalog-admin-form-sheet');
         expect(catalogAdminOfferEditView).toContain('<CatalogAdminModalView');
-        expect(catalogAdminOfferEditView).toContain('widthClassName="w-[420px]"');
-        expect(catalogAdminQuickActionsView).toContain('setEditingPageData(true)');
-        expect(catalogLayoutDefaultView).toContain('<CatalogAdminQuickActionsView');
-        expect(catalogLayoutPetView).toContain('<CatalogAdminQuickActionsView');
-        expect(catalogLayoutTrophiesView).toContain('<CatalogAdminQuickActionsView');
+        expect(catalogAdminOfferEditView).toContain('widthClassName="w-[500px]"');
         expect(catalogLayoutColorGroupingView).not.toContain('style={ { maxHeight: 154 } }');
         expect(catalogLayoutSoundMachineView).not.toContain('style={ { height: 140 } }');
-        expect(catalogLayoutVipBuyView).not.toContain("backgroundSize: 'contain'");
+        expect(catalogLayoutVipBuyView).not.toContain('backgroundSize: \'contain\'');
         expect(catalogLayoutMarketplaceItemView).not.toContain('style={ { width: 40, height: 40 } }');
-        expect(catalogLayoutTrophiesView).not.toContain("boxShadow: '0 0 8px");
+        expect(catalogLayoutTrophiesView).not.toContain('boxShadow: \'0 0 8px');
         expect(catalogLayoutTrophiesView).not.toContain('background: trophyText.length');
-        expect(catalogLayoutTrophiesView).toContain('nitro-catalog-trophy-inscription');
+        expect(catalogLayoutTrophiesView).toContain('octane-catalog-trophy-inscription');
         expect(catalogAdminPageEditView).toContain('<CatalogAdminModalView');
-        expect(catalogAdminPageEditView).toContain('widthClassName="w-[520px]"');
+        expect(catalogAdminPageEditView).toContain('widthClassName="w-[540px]"');
+        expect(catalogAdminPageEditView).toContain('octane-catalog-admin-form-sheet');
         expect(catalogAdminPageEditView).not.toContain('border-2 border-card-grid-item-border rounded px-2 py-1 bg-white');
-        expect(catalogAdminPageEditView).toContain('nitro-catalog-admin-input');
+        expect(catalogAdminPageEditView).toContain('octane-catalog-admin-input');
         expect(getCatalogLayout).not.toContain('custom_prefix');
         expect(getCatalogLayout).not.toContain('CatalogLayoutCustomPrefixView');
-        expect(catalogCss).toContain('.nitro-catalog-window :where(.bg-white, .bg-gray-50, .bg-card-grid-item)');
-        expect(catalogCss).toContain('.nitro-catalog-window :where(input, select, textarea)');
-        expect(catalogCss).toContain('.nitro-catalog-window :where(.text-muted, .text-dark)');
-        expect(catalogCss).toContain('.nitro-catalog-admin-body :where(.uppercase.font-bold)');
-        expect(catalogCss).toContain('.nitro-catalog-admin-input');
-        expect(catalogCss).toContain('.nitro-catalog-admin-button.is-primary');
-        expect(catalogCss).toContain('.nitro-catalog-trophy-inscription.has-text');
-        expect(catalogCss).toContain('.nitro-catalog-marketplace-item-icon');
-        expect(catalogCss).toContain('.nitro-catalog-vip-hc-banner');
+        expect(catalogCss).toContain('.octane-catalog-window :where(.bg-white, .bg-gray-50, .bg-card-grid-item)');
+        expect(catalogCss).toContain('.octane-catalog-window :where(input, select, textarea)');
+        expect(catalogCss).toContain('.octane-catalog-window :where(.text-muted, .text-dark)');
+        expect(catalogCss).toContain('.octane-catalog-admin-body :where(.uppercase.font-bold)');
+        expect(catalogCss).toContain('.octane-catalog-admin-input');
+        expect(catalogCss).toContain('.octane-catalog-admin-form-sheet');
+        expect(catalogCss).toContain('.octane-catalog-admin-form-section');
+        expect(catalogCss).toContain('.octane-catalog-admin-button.is-primary');
+        expect(catalogCss).toContain('.octane-catalog-trophy-inscription.has-text');
+        expect(catalogCss).toContain('.octane-catalog-marketplace-item-icon');
+        expect(catalogCss).toContain('.octane-catalog-vip-hc-banner');
         expect(inventoryCategoryFilterView).not.toContain('style={ { width: currentTab === TAB_BADGES');
-        expect(inventoryCategoryFilterView).toContain('nitro-inventory-filter-bar');
-        expect(inventoryCss).toContain('.nitro-inventory-window .nitro-inventory-filter-bar.is-badges');
-        expect(inventoryCss).toContain('.nitro-inventory-window :where(.bg-card-grid-item, .bg-white, .bg-light, .bg-muted)');
-        expect(inventoryCss).toContain('.nitro-inventory-window :where(input, select, textarea)');
+        expect(inventoryCategoryFilterView).toContain('octane-inventory-filter-bar');
+        expect(inventoryCss).toContain('.octane-inventory-window .octane-inventory-filter-bar.is-badges');
+        expect(inventoryCss).toContain('.octane-inventory-window :where(.bg-card-grid-item, .bg-white, .bg-light, .bg-muted)');
+        expect(inventoryCss).toContain('.octane-inventory-window :where(input, select, textarea)');
         expect(friendsCategoryManagerView).not.toContain('style={ { width: 270, minWidth: 270 } }');
         expect(friendsListRemoveConfirmationView).not.toContain('style={ { width: 270, height: 225');
         expect(friendsListRoomInviteView).not.toContain('style={ { width: 270, height: 225');
-        expect(friendsCss).toContain('.nitro-friends-category-manager :where(input, select, textarea)');
+        expect(friendsCss).toContain('.octane-friends-category-manager :where(input, select, textarea)');
         expect(friendsCss).toContain('width: min(270px, calc(100vw - 16px))');
-        expect(roomSettingsCss).toContain('.nitro-room-settings');
-        expect(roomSettingsCss).toContain(':where(input, select, textarea)');
-        expect(indexCss).not.toContain(".nitro-wired :where(select, input[type='text'], input[type='number'], textarea)");
-        expect(wiredCss).toContain(".nitro-wired :where(select, input[type='text'], input[type='number'], textarea)");
-        expect(wiredCss).toContain('.nitro-wired__variable-picker-portal');
-        expect(indexCss).toContain('.nitro-mod-tools :where(input, select, textarea)');
-        expect(indexCss).toContain('[class*="nitro-mod-tools-"] :where(.bg-white, .bg-light, .bg-muted, .bg-card-grid-item, .bg-white\\/70)');
-        expect(wiredCss).toContain('.nitro-wired__body');
+        expect(roomSettingsCss).toContain('.octane-room-settings');
+        // Checkboxes/radios are excluded from the text-input skin: its
+        // `background` shorthand would wipe the @tailwindcss/forms check glyph.
+        expect(roomSettingsCss).toContain(':where(input:not([type="checkbox"]):not([type="radio"]), select, textarea)');
+        expect(indexCss).not.toContain('.octane-wired :where(select, input[type=\'text\'], input[type=\'number\'], textarea)');
+        expect(wiredCss).toContain('.octane-wired :where(select, input[type=\'text\'], input[type=\'number\'], textarea)');
+        expect(wiredCss).toContain('.octane-wired__variable-picker-portal');
+        // Text fields only: a checkbox is not a text field, and the mod tool used to paint it as one.
+        expect(indexCss).toContain(".octane-mod-tools :where(input:not([type='checkbox']):not([type='radio']), select, textarea)");
+        expect(indexCss).not.toContain('.octane-mod-tools :where(input, select, textarea)');
+        expect(indexCss).toContain('[class*="octane-mod-tools-"] :where(.bg-white, .bg-light, .bg-muted, .bg-card-grid-item, .bg-white\\/70)');
+        expect(wiredCss).toContain('.octane-wired__body');
         expect(wiredCss).toContain('overflow-y: auto');
         expect(modToolsView).toContain('max-w-[calc(100vw-16px)]');
         expect(modToolsRoomView).toContain('max-w-[calc(100vw-16px)]');
@@ -148,15 +154,16 @@ describe('UI CSS ownership', () => {
         expect(navigatorView).toContain('max-w-[calc(100vw-16px)]');
         expect(navigatorRoomSettingsView).toContain('max-w-[calc(100vw-16px)]');
         expect(wiredBaseView).toContain('max-h-[calc(100vh-16px)]');
-        expect(friendsListView).toContain('max-w-[calc(100vw-16px)]');
-        expect(friendsMessengerView).toContain('max-w-[calc(100vw-16px)]');
+        // These fixed-layout windows keep their viewport clamp in their own CSS.
+        expect(friendsListCss).toContain('max-width: min(230px, calc(100vw - 16px));');
+        expect(friendsMessengerCss).toMatch(/\.messenger-window\s*\{[^}]*max-width:\s*calc\(100vw - 10px\)/s);
         expect(vaultView).toContain('max-w-[calc(100vw-16px)]');
         expect(helpView).toContain('max-w-[calc(100vw-16px)]');
         expect(userSettingsView).toContain('max-w-[calc(100vw-16px)]');
-        expect(chatHistoryView).toContain('nitro-chat-history');
-        expect(chatHistoryView).not.toContain("style={{ flex: 1, overflowY: 'auto'");
-        expect(chatHistoryCss).toContain('.nitro-chat-history-scroll');
-        expect(vaultCss).toContain('.nitro-vault-content');
+        expect(chatHistoryView).toContain('octane-chat-history');
+        expect(chatHistoryView).not.toContain('style={{ flex: 1, overflowY: \'auto\'');
+        expect(chatHistoryCss).toContain('.octane-chat-history-scroll');
+        expect(vaultCss).toContain('.octane-vault-content');
         expect(userSettingsCss).toContain('.user-settings-window');
         expect(sanctionStatusView).toContain('max-w-[calc(100vw-16px)]');
         expect(mentionsView).toContain('max-w-[calc(100vw-16px)]');

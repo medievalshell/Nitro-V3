@@ -1,8 +1,8 @@
 import { FC, useEffect, useMemo, useState } from 'react';
-import { LocalizeText, WiredFurniType } from '../../../../api';
+import { LocalizeText, localizeWithFallback, WiredFurniType } from '../../../../api';
 import { Text } from '../../../../common';
 import { useWired } from '../../../../hooks';
-import { NitroInput } from '../../../../layout';
+import { OctaneInput } from '../../../../layout';
 import { WiredSourcesSelector } from '../WiredSourcesSelector';
 import { WiredExtraBaseView } from './WiredExtraBaseView';
 import { WiredPlaceholderPreview } from './WiredPlaceholderPreview';
@@ -87,7 +87,7 @@ export const WiredExtraTextOutputFurniNameView: FC<{}> = () => {
             <div className="flex flex-col gap-2">
                 <div className="flex flex-col gap-1">
                     <Text>{LocalizeText('wiredfurni.params.texts.placeholder_name')}</Text>
-                    <NitroInput
+                    <OctaneInput
                         maxLength={MAX_PLACEHOLDER_NAME_LENGTH}
                         type="text"
                         value={placeholderName}
@@ -105,7 +105,7 @@ export const WiredExtraTextOutputFurniNameView: FC<{}> = () => {
                             type="radio"
                             onChange={() => setPlaceholderType(TYPE_SINGLE)}
                         />
-                        <Text>{LocalizeText('wiredfurni.params.texts.placeholder_type.1')}</Text>
+                        <Text>{localizeWithFallback('wiredfurni.params.texts.placeholder_type.furni.1', LocalizeText('wiredfurni.params.texts.placeholder_type.1'))}</Text>
                     </label>
                     <label className="flex items-center gap-1 cursor-pointer">
                         <input
@@ -115,13 +115,13 @@ export const WiredExtraTextOutputFurniNameView: FC<{}> = () => {
                             type="radio"
                             onChange={() => setPlaceholderType(TYPE_MULTIPLE)}
                         />
-                        <Text>{LocalizeText('wiredfurni.params.texts.placeholder_type.2')}</Text>
+                        <Text>{localizeWithFallback('wiredfurni.params.texts.placeholder_type.furni.2', LocalizeText('wiredfurni.params.texts.placeholder_type.2'))}</Text>
                     </label>
                 </div>
                 {placeholderType === TYPE_MULTIPLE && (
                     <div className="flex flex-col gap-1">
                         <Text>{LocalizeText('wiredfurni.params.texts.select_delimiter')}</Text>
-                        <NitroInput
+                        <OctaneInput
                             maxLength={MAX_DELIMITER_LENGTH}
                             type="text"
                             value={delimiter}

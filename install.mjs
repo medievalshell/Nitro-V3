@@ -7,22 +7,21 @@ import { fileURLToPath } from 'node:url';
 import { platform } from 'node:os';
 import * as readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
+import { DEFAULT_JSON_MODE, normalizeJsonModeAnswer, VALID_JSON_MODES } from './scripts/json-mode.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_RENDERER_REPO_URL = 'https://github.com/duckietm/Nitro_Render_V3.git';
+const DEFAULT_RENDERER_REPO_URL = 'https://github.com/duckietm/Octane-Renderer.git';
 // Sibling folder names the client's vite.config / tsconfig already know how to resolve.
 // Auto-detection walks these in order; a fresh clone defaults to the first one.
-const RENDERER_DIR_CANDIDATES = ['Nitro_Render_V3', 'renderer'];
+const RENDERER_DIR_CANDIDATES = ['Octane-Renderer', 'renderer'];
 const DEFAULT_RENDERER_DIR_NAME = RENDERER_DIR_CANDIDATES[0];
-// Resolved in main() from --renderer-repo / --renderer-dir / NITRO_RENDERER_DIR / auto-detection.
+// Resolved in main() from --renderer-repo / --renderer-dir / OCTANE_RENDERER_DIR / auto-detection.
 let RENDERER_REPO_URL = DEFAULT_RENDERER_REPO_URL;
 let RENDERER_DIR = resolve(ROOT, '..', DEFAULT_RENDERER_DIR_NAME);
 const CONFIG_DIR = join(ROOT, 'public', 'configuration');
-const NITRO_BUILD_FILE = join(ROOT, '.nitro-build.json');
+const OCTANE_BUILD_FILE = join(ROOT, '.octane-build.json');
 const IS_WINDOWS = platform() === 'win32';
 const MIN_NODE_MAJOR = 18;
-const VALID_JSON_MODES = ['json5', 'legacy', 'auto'];
-const DEFAULT_JSON_MODE = 'json5';
 
 const KEY_SPECS = {
     'socket.url':           { type: 'url',       schemes: ['ws:', 'wss:'],     flag: 'socket-url' },
@@ -227,16 +226,16 @@ function printUsage() {
         .map(([key, spec]) => '  --' + spec.flag + '=<value>' + ' '.repeat(Math.max(1, 32 - spec.flag.length)) + 'Set ' + key)
         .join('\n');
     console.log([
-        'Nitro-V3 cross-platform installer',
+        'Octane cross-platform installer',
         '',
         'Usage: node install.mjs [flags]',
         '',
         'Workflow flags:',
         '  --non-interactive, --skip-prompts   Keep default URLs unless overridden by --<key>=<value>',
-        '  --json-mode=<json5|legacy|auto>     Choose the JSON parsing mode without prompting',
+        '  --json-mode=<jsonc|legacy|auto>     Choose the JSON parsing mode without prompting',
         '  --renderer-dir=<path>               Renderer folder (absolute, or relative to the parent dir).',
-        '                                      Default: auto-detect ' + RENDERER_DIR_CANDIDATES.join(' / ') + ', else "' + DEFAULT_RENDERER_DIR_NAME + '". Env: NITRO_RENDERER_DIR',
-        '  --renderer-repo=<url>               Git URL to clone the renderer from (default: duckietm Nitro_Render_V3)',
+        '                                      Default: auto-detect ' + RENDERER_DIR_CANDIDATES.join(' / ') + ', else "' + DEFAULT_RENDERER_DIR_NAME + '". Env: OCTANE_RENDERER_DIR',
+        '  --renderer-repo=<url>               Git URL to clone the renderer from (default: duckietm/Octane-Renderer)',
         '  --skip-build                        Skip the final yarn build',
         '  --skip-clone                        Skip cloning the renderer',
         '  --skip-link                         Skip yarn link calls (useful when re-running)',
@@ -247,11 +246,11 @@ function printUsage() {
         '',
         'Steps performed:',
         '  1. Check Node >= ' + MIN_NODE_MAJOR + ', yarn, git',
-        '  2. Resolve the renderer dir (--renderer-dir / NITRO_RENDERER_DIR / interactive prompt / auto-detect ' + RENDERER_DIR_CANDIDATES.join(' or ') + '), cloning to ../' + DEFAULT_RENDERER_DIR_NAME + ' if absent',
+        '  2. Resolve the renderer dir (--renderer-dir / OCTANE_RENDERER_DIR / interactive prompt / auto-detect ' + RENDERER_DIR_CANDIDATES.join(' or ') + '), cloning to ../' + DEFAULT_RENDERER_DIR_NAME + ' if absent',
         '  3. yarn install + yarn link in the renderer',
-        '  4. yarn install + yarn link "@nitrots/nitro-renderer" in this project',
+        '  4. yarn install + yarn link "@octane/renderer" in this project',
         '  5. Copy public/configuration/*.example -> *.json (keeps existing files)',
-        '  6. Choose JSON parsing mode (json5 recommended) -> writes .nitro-build.json',
+        '  6. Choose JSON parsing mode (jsonc recommended) -> writes .octane-build.json',
         '  7. Prompt for URLs and patch the JSON config files',
         '  8. yarn build (honours the JSON mode chosen at step 6)',
         ''
@@ -284,9 +283,9 @@ async function checkPrereqs() {
 }
 
 // Resolve which sibling folder is the renderer SDK, honouring (in priority order):
-//   1. --renderer-dir=<path>      2. NITRO_RENDERER_DIR env   (both skip the prompt)
-//   3. interactive prompt — the operator chooses (default = a detected folder, else ./Nitro_Render_V3)
-//   4. --non-interactive: first existing folder among RENDERER_DIR_CANDIDATES, else ./Nitro_Render_V3
+//   1. --renderer-dir=<path>      2. OCTANE_RENDERER_DIR env   (both skip the prompt)
+//   3. interactive prompt — the operator chooses (default = a detected folder, else ./octane-renderer)
+//   4. --non-interactive: first existing folder among RENDERER_DIR_CANDIDATES, else ./octane-renderer
 // A chosen/explicit path may be absolute or relative to the parent of the client.
 async function resolveRendererDir(opts) {
     const parent = resolve(ROOT, '..');
@@ -297,9 +296,11 @@ async function resolveRendererDir(opts) {
         info('Renderer dir from --renderer-dir: ' + dir);
         return dir;
     }
-    if (process.env.NITRO_RENDERER_DIR) {
-        const dir = toAbs(process.env.NITRO_RENDERER_DIR);
-        info('Renderer dir from NITRO_RENDERER_DIR: ' + dir);
+    // NITRO_RENDERER_DIR is the legacy env name, kept for existing setups
+    const rendererDirEnv = process.env.OCTANE_RENDERER_DIR ?? process.env.NITRO_RENDERER_DIR;
+    if (rendererDirEnv) {
+        const dir = toAbs(rendererDirEnv);
+        info('Renderer dir from OCTANE_RENDERER_DIR: ' + dir);
         return dir;
     }
 
@@ -362,15 +363,15 @@ async function setupClient(opts) {
     await runShell('yarn install', ROOT);
     if (opts.skipLink) { info('--skip-link: skipping yarn link in client'); return; }
     try {
-        await runShell('yarn link "@nitrots/nitro-renderer"', ROOT);
+        await runShell('yarn link "@octane/renderer"', ROOT);
     } catch (e) {
-        warn('yarn link "@nitrots/nitro-renderer" failed (likely already linked): ' + e.message);
+        warn('yarn link "@octane/renderer" failed (likely already linked): ' + e.message);
     }
 }
 
 async function writeJsonMode(mode) {
     const payload = { jsonMode: mode, configuredAt: new Date().toISOString() };
-    await writeFile(NITRO_BUILD_FILE, JSON.stringify(payload, null, 2) + '\n', 'utf8');
+    await writeFile(OCTANE_BUILD_FILE, JSON.stringify(payload, null, 2) + '\n', 'utf8');
 }
 
 async function chooseJsonMode(opts) {
@@ -383,9 +384,9 @@ async function chooseJsonMode(opts) {
     }
 
     let existing = null;
-    if (existsSync(NITRO_BUILD_FILE)) {
+    if (existsSync(OCTANE_BUILD_FILE)) {
         try {
-            const raw = await readFile(NITRO_BUILD_FILE, 'utf8');
+            const raw = await readFile(OCTANE_BUILD_FILE, 'utf8');
             const parsed = JSON.parse(raw);
             if (VALID_JSON_MODES.includes(parsed?.jsonMode)) existing = parsed.jsonMode;
         } catch {}
@@ -395,34 +396,29 @@ async function chooseJsonMode(opts) {
         const mode = existing || DEFAULT_JSON_MODE;
         await writeJsonMode(mode);
         summary.jsonMode = mode;
-        summary.jsonModeSource = existing ? 'existing .nitro-build.json' : 'default (non-interactive)';
+        summary.jsonModeSource = existing ? 'existing .octane-build.json' : 'default (non-interactive)';
         info('--non-interactive: JSON mode = ' + mode + (existing ? ' (preserved)' : ' (default)'));
         return;
     }
 
     info('Pick how configuration files (renderer-config, ui-config, gamedata) are parsed.');
-    info('  1) JSON5  (recommended - accepts comments, trailing commas, single quotes)');
+    info('  1) JSONC  (recommended - accepts comments and trailing commas)');
     info('  2) JSON   (legacy strict - only standard JSON valid)');
-    if (existing) info('  Current value in .nitro-build.json: ' + existing);
+    info('  auto      Try strict JSON first, then JSONC');
+    if (existing) info('  Current value in .octane-build.json: ' + existing);
 
     const rl = readline.createInterface({ input, output });
     activeReadline = rl;
     let chosen = null;
     try {
         while (chosen === null) {
-            const defaultLabel = existing || '1=JSON5';
+            const defaultLabel = existing || '1=JSONC';
             const answer = (await rl.question('  Choice [' + defaultLabel + ']: ')).trim().toLowerCase();
-            if (answer.length === 0) {
-                chosen = existing || DEFAULT_JSON_MODE;
-            } else if (answer === '1' || answer === 'json5' || answer === 'y' || answer === 'yes') {
-                chosen = 'json5';
-            } else if (answer === '2' || answer === 'json' || answer === 'legacy' || answer === 'n' || answer === 'no') {
-                chosen = 'legacy';
-            } else if (answer === 'auto') {
-                chosen = 'auto';
-            } else {
-                warn('Invalid choice. Enter 1, 2, json5, json, legacy, or auto.');
-            }
+            chosen = answer.length === 0
+                ? (existing || DEFAULT_JSON_MODE)
+                : normalizeJsonModeAnswer(answer);
+
+            if(chosen === null) warn('Invalid choice. Enter 1, 2, jsonc, json, legacy, or auto.');
         }
     } finally {
         activeReadline = null;
@@ -432,7 +428,7 @@ async function chooseJsonMode(opts) {
     await writeJsonMode(chosen);
     summary.jsonMode = chosen;
     summary.jsonModeSource = 'interactive prompt';
-    ok('JSON mode set to ' + chosen + ' -> wrote .nitro-build.json');
+    ok('JSON mode set to ' + chosen + ' -> wrote .octane-build.json');
     if (chosen === 'legacy') {
         warn('Legacy mode is strict: config files must be valid standard JSON (no comments, no trailing commas).');
     }
@@ -595,7 +591,7 @@ async function main() {
 
     RENDERER_REPO_URL = opts.rendererRepo || DEFAULT_RENDERER_REPO_URL;
 
-    console.log(c.bold + 'Nitro-V3 installer' + c.reset + ' (' + (IS_WINDOWS ? 'Windows' : platform()) + ')');
+    console.log(c.bold + 'Octane installer' + c.reset + ' (' + (IS_WINDOWS ? 'Windows' : platform()) + ')');
     console.log('Project root: ' + ROOT);
 
     step(STEPS[0]); await checkPrereqs();

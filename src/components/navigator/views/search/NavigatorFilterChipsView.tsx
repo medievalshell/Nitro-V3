@@ -1,5 +1,6 @@
-import { FC } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 import { LocalizeText, SearchFilterOptions } from '../../../../api';
+import dropmenuArrow from '../../../../assets/images/habbo-skin/slices/dropmenu-default-arrow.png';
 
 interface NavigatorFilterChipsViewProps {
     value: number;
@@ -8,23 +9,62 @@ interface NavigatorFilterChipsViewProps {
 
 export const NavigatorFilterChipsView: FC<NavigatorFilterChipsViewProps> = (props) => {
     const { value, onChange } = props;
+    const [open, setOpen] = useState(false);
+    const rootRef = useRef<HTMLDivElement>(null);
+    const current = SearchFilterOptions[value] ?? SearchFilterOptions[0];
+
+    useEffect(() => {
+        if (!open) return;
+
+        const onPointerDown = (event: PointerEvent) => {
+            if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+        };
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setOpen(false);
+        };
+
+        document.addEventListener('pointerdown', onPointerDown);
+        document.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            document.removeEventListener('pointerdown', onPointerDown);
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, [open]);
 
     return (
-        <div className="flex flex-wrap gap-1">
-            {SearchFilterOptions.map((filter, index) => {
-                const isActive = value === index;
-
-                return (
-                    <button
-                        key={index}
-                        type="button"
-                        onClick={() => onChange(index)}
-                        className={`px-2 py-0.5 rounded-full text-[11px] border cursor-pointer transition-colors ${isActive ? 'bg-primary text-white border-primary' : 'bg-card-grid-item text-gray-600 border-card-grid-item-border hover:bg-primary hover:text-white hover:border-primary'}`}
-                    >
-                        {LocalizeText('navigator.filter.' + filter.name)}
-                    </button>
-                );
-            })}
+        <div ref={rootRef} className={`octane-navigator-air__filter${open ? ' is-open' : ''}`}>
+            <button
+                type="button"
+                className="octane-navigator-air__filter-button"
+                aria-haspopup="listbox"
+                aria-expanded={open}
+                aria-label={LocalizeText('navigator.filter.anything')}
+                onClick={() => setOpen((currentOpen) => !currentOpen)}
+            >
+                <span>{LocalizeText('navigator.filter.' + current.name)}</span>
+                <img src={dropmenuArrow} alt="" width={16} height={16} />
+            </button>
+            {open && (
+                <ul className="octane-navigator-air__filter-list" role="listbox">
+                    {SearchFilterOptions.map((filter, index) => (
+                        <li key={filter.name}>
+                            <button
+                                type="button"
+                                role="option"
+                                aria-selected={index === value}
+                                className={index === value ? 'is-selected' : undefined}
+                                onClick={() => {
+                                    onChange(index);
+                                    setOpen(false);
+                                }}
+                            >
+                                {LocalizeText('navigator.filter.' + filter.name)}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
         </div>
     );
 };

@@ -1,4 +1,4 @@
-.nitro-room-widgets {
+.octane-room-widgets {
     pointer-events: none;
 }
 
@@ -10,16 +10,16 @@
     max-height: 430px !important;
 }
 
-.nitro-widget-custom-stack-height {
+.octane-widget-custom-stack-height {
     width: 275px;
     height: 220px;
 }
 
-.nitro-room-widget-toner {
+.octane-room-widget-toner {
     width: 190px;
 }
 
-.nitro-room-widget-background-color {
+.octane-room-widget-background-color {
     width: 314px;
 
     .bgcolor-widget-content {
@@ -97,13 +97,13 @@
         pointer-events: none;
     }
 
-    .bgcolor-widget-slider-shell .nitro-slider-wrapper {
+    .bgcolor-widget-slider-shell .octane-slider-wrapper {
         position: relative;
         z-index: 1;
         gap: 0;
     }
 
-    .bgcolor-widget-slider-shell .nitro-slider {
+    .bgcolor-widget-slider-shell .octane-slider {
         height: 16px;
     }
 
@@ -150,8 +150,11 @@
     }
 }
 
-.nitro-room-widget-dimmer {
-    width: 275px;
+.octane-room-widget-dimmer {
+    width: min(275px, calc(100vw - 16px));
+    min-width: 0;
+    max-width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
 
     .dimmer-banner {
         width: 56px;
@@ -171,14 +174,30 @@
     }
 }
 
-.nitro-widget-crafting {
-    width: 500px;
-    height: 300px;
+.octane-widget-crafting {
+    width: min(500px, calc(100vw - 16px));
+    min-width: 0;
+    max-width: calc(100vw - 16px);
+    height: min(300px, calc(100vh - 16px));
+    min-height: 0;
+    max-height: calc(100vh - 16px);
+
+    .crafting-widget-layout {
+        min-height: 0;
+    }
+
+    .crafting-widget-pane {
+        flex: 1 1 0;
+    }
 }
 
-.nitro-widget-exchange-credit {
-    width: 375px;
-    height: 150px;
+.octane-widget-exchange-credit {
+    width: min(375px, calc(100vw - 16px));
+    min-width: 0;
+    max-width: calc(100vw - 16px);
+    height: min(150px, calc(100vh - 16px));
+    min-height: 0;
+    max-height: calc(100vh - 16px);
 
     .exchange-image {
         background-image: url('@/assets/images/room-widgets/exchange-credit/exchange-credit-image.png');
@@ -187,10 +206,16 @@
     }
 }
 
-.nitro-external-image-widget {
+.octane-external-image-widget {
+    width: min(340px, calc(100vw - 16px));
+    min-width: 0;
+    max-width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+
     .picture-preview {
-        width: 320px;
-        height: 320px;
+        width: min(320px, calc(100vw - 36px));
+        height: auto;
+        aspect-ratio: 1;
     }
     
     .picture-preview-buttons {
@@ -208,12 +233,15 @@
     }
 }
 
-.nitro-gift-opening {
-    width: 340px;
+.octane-gift-opening {
+    width: min(340px, calc(100vw - 16px));
+    min-width: 0;
+    max-width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
     resize: none;
 }
 
-.nitro-mannequin {
+.octane-mannequin {
     width: 300px;
 
     .mannequin-preview {
@@ -232,7 +260,7 @@
     }
 }
 
-.nitro-stickie {
+.octane-stickie {
     position: relative;
     width: 185px;
     height: 178px;
@@ -240,6 +268,45 @@
     left: 25px;
     padding: 1px;
     pointer-events: all;
+
+    &.stickie-plain {
+        filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3)) drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.25));
+
+        &::before {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            inset: 0;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            border-radius: 2px;
+            background-color: var(--stickie-color);
+            background-image:
+                linear-gradient(180deg, rgba(0, 0, 0, 0.07) 0, rgba(0, 0, 0, 0.07) 18px, rgba(255, 255, 255, 0.18) 19px, rgba(255, 255, 255, 0) 32px),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, 0.05) 100%);
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%);
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 22px;
+            height: 22px;
+            background-color: var(--stickie-color);
+            background-image: linear-gradient(to top left, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.12) 45%, rgba(255, 255, 255, 0.2) 100%);
+            clip-path: polygon(0 0, 100% 0, 0 100%);
+        }
+
+        .stickie-context {
+            font-family: 'Segoe Print', 'Bradley Hand', 'Lucida Handwriting', 'Comic Sans MS', cursive;
+            line-height: 1.4;
+
+            textarea {
+                font-style: normal;
+            }
+        }
+    }
 
     .stickie-header {
         width: 183px;
@@ -255,6 +322,7 @@
             width: 10px;
             height: 10px;
             cursor: pointer;
+            border: 1px solid rgba(0, 0, 0, 0.4);
         }
     }
 
@@ -280,6 +348,8 @@
             outline: none;
             box-shadow: none;
             resize: none;
+            font-family: inherit;
+            font-size: inherit;
             font-style: italic;
 
             &:active {
@@ -291,33 +361,7 @@
     }
 }
 
-.nitro-stickie-image {
-    background-image: url('@/assets/images/room-widgets/stickie-widget/stickie-spritesheet.png');
-
-    &.stickie-blue,
-    &.stickie-yellow,
-    &.stickie-green,
-    &.stickie-pink {
-        width: 185px;
-        height: 178px;
-    }
-
-    &.stickie-blue {
-        background-position: -2px -2px;
-    }
-
-    &.stickie-yellow {
-        background-image: url('@/assets/images/room-widgets/stickie-widget/stickie-yellow.png');
-    }
-
-    &.stickie-green {
-        background-position: -191px -2px;
-    }
-
-    &.stickie-pink {
-        background-position: -2px -184px;
-    }
-
+.octane-stickie-image {
     &.stickie-christmas {
         background-image: url('@/assets/images/room-widgets/stickie-widget/stickie-christmas.png');
     }
@@ -341,17 +385,17 @@
     &.stickie-close {
         width: 10px;
         height: 10px;
-        background-position: -2px -366px;
+        background-image: url('@/assets/images/room-widgets/stickie-widget/stickie-close.png');
     }
 
     &.stickie-trash {
         width: 9px;
         height: 10px;
-        background-position: -16px -366px;
+        background-image: url('@/assets/images/room-widgets/stickie-widget/stickie-trash.png');
     }
 }
 
-.nitro-engraving-lock {
+.octane-engraving-lock {
     width: 300px;
 
     .engraving-lock-stage-1 {
@@ -369,65 +413,122 @@
     }
 }
 
-.nitro-engraving-lock-view {
+/* lovelock_engraving_xml.xml — 375×210, absolute layout */
+.octane-engraving-lock-view {
+    position: relative;
     width: 375px;
     height: 210px;
-    background-position: 0px 0px;
     background-image: url('@/assets/images/room-widgets/engraving-lock-widget/engraving-lock-spritesheet.png');
-
-    color: #622e54;
-    font-weight: bold;
-    font-size: 16px;
-    text-shadow: 0px 1px white;
-
-    &.engraving-lock-3 {
-        background-position: 0px -210px;
-        color: #614110;
-    }
-
-    &.engraving-lock-4 {
-        background-position: 0px -420px;
-        color: #f1dcc8;
-        text-shadow: 0px 2px rgba(0, 0, 0, 0.4);
-
-        .engraving-lock-avatar {
-            margin-bottom: 10px;
-        }
-    }
-
-    .engraving-lock-close {
-        position: absolute;
-        cursor: pointer;
-        width: 15px;
-        height: 15px;
-        top: 34px;
-        right: 27px;
-    }
-
-    .engraving-lock-avatar {
-        width: 70px;
-        height: 120px;
-
-        div {
-            position: absolute;
-            margin-top: -5px;
-        }
-
-        &:nth-child(1) {
-            div {
-                margin-left: -10px;
-            }
-        }
-
-        &:nth-child(2) {
-            div {
-                margin-left: -15px;
-            }
-        }
-    }
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    background-size: 411px 630px;
+    image-rendering: var(--octane-pixel-art, pixelated);
+    color: #59224a;
+    font-family: UbuntuCondensed, Ubuntu, sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 17px;
+    text-shadow: 0 1px 0 #ffffff;
+    user-select: none;
 }
 
-.nitro-widget-high-score {
+.octane-engraving-lock-view.engraving-lock-3 {
+    background-position: 0 -210px;
+    color: #614110;
+}
+
+.octane-engraving-lock-view.engraving-lock-4 {
+    background-position: 0 -420px;
+    color: #f1dcc8;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.octane-engraving-lock-view .engraving-lock-close {
+    position: absolute;
+    top: 33px;
+    right: 24px;
+    width: 21px;
+    height: 17px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.octane-engraving-lock-view .engraving-lock-avatar {
+    position: absolute;
+    top: 7px;
+    width: 70px;
+    height: 115px;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.octane-engraving-lock-view .engraving-lock-avatar .avatar-image {
+    position: absolute !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 50% !important;
+    width: 90px !important;
+    height: 130px !important;
+    margin: 0 !important;
+    transform: translateX(-50%) !important;
+    image-rendering: var(--octane-pixel-art, pixelated);
+}
+
+.octane-engraving-lock-view .engraving-lock-avatar--left {
+    left: 115px;
+}
+
+.octane-engraving-lock-view .engraving-lock-avatar--right {
+    left: 186px;
+}
+
+.octane-engraving-lock-view .engraving-lock-header,
+.octane-engraving-lock-view .engraving-lock-date,
+.octane-engraving-lock-view .engraving-lock-name {
+    position: absolute;
+    display: block;
+    height: 17px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.octane-engraving-lock-view .engraving-lock-header {
+    top: 126px;
+    left: 82px;
+    width: 217px;
+    text-align: center;
+}
+
+.octane-engraving-lock-view .engraving-lock-date {
+    top: 151px;
+    left: 143px;
+    width: 97px;
+    text-align: center;
+}
+
+.octane-engraving-lock-view .engraving-lock-name {
+    top: 175px;
+}
+
+.octane-engraving-lock-view .engraving-lock-name--left {
+    left: 19px;
+    width: 150px;
+    text-align: right;
+}
+
+.octane-engraving-lock-view .engraving-lock-name--right {
+    left: 199px;
+    width: 87px;
+    text-align: left;
+}
+
+.octane-widget-high-score {
     border-radius: 0.3rem;
     border: solid 1px #000;
 
@@ -508,9 +609,21 @@
     }
 }
 
-.nitro-playlist-editor-widget {
-    width: 625px;
-    height: 440px;
+.octane-playlist-editor-widget {
+    width: min(625px, calc(100vw - 16px));
+    min-width: 0;
+    max-width: calc(100vw - 16px);
+    height: min(440px, calc(100vh - 16px));
+    min-height: 0;
+    max-height: calc(100vh - 16px);
+
+    .playlist-editor-layout {
+        min-height: 0;
+    }
+
+    .playlist-editor-pane {
+        flex: 1 1 0;
+    }
 
     img.my-music {
         position: absolute;
@@ -597,7 +710,7 @@
     }
 
     .layout-grid-item {
-        min-height: 95px;
+        min-height: 106px;
         min-width: 95px;
         position: relative;
 
@@ -611,9 +724,26 @@
     }
 }
 
-.nitro-mysterybox-dialog {
-    width: 375px;
-    height: 210px;
+@media (max-width: 640px), (max-height: 520px) {
+    .octane-playlist-editor-widget {
+        .playlist-editor-layout {
+            flex-direction: column;
+        }
+
+        .playlist-editor-pane {
+            width: 100%;
+            min-height: 0;
+        }
+    }
+}
+
+.octane-mysterybox-dialog {
+    width: min(375px, calc(100vw - 16px));
+    min-width: 0;
+    max-width: calc(100vw - 16px);
+    height: min(210px, calc(100vh - 16px));
+    min-height: 0;
+    max-height: calc(100vh - 16px);
 
     .prize-container {
         height: 80px;
@@ -624,17 +754,14 @@
     }
 }
 
-.nitro-mysterytrophy-dialog
-{
-    .mysterytrophy-dialog-top
-    {
-        width: 400px;
-        height: 120px;
+.octane-mysterytrophy-dialog {
+    .mysterytrophy-dialog-top {
+        width: 100%;
+        min-height: 120px;
         border-radius: 2px;
         background-color: #0E3F52;
 
-        .mysterytrophy-image
-        {
+        .mysterytrophy-image {
             width: 80px;
             height: 84px;
             position: relative;
@@ -642,35 +769,32 @@
             background-repeat: no-repeat;
         }
 
-        .mysterytrophy-text-big
-        {
+        .mysterytrophy-text-big {
             font-size: 16px;
         }
     }
 
-    .mysterytrophy-dialog-bottom
-    {
+    .mysterytrophy-dialog-bottom {
         display: flex;
         justify-content: center;
-        width: 400px;
-        height: 120px;
+        width: 100%;
+        min-height: 120px;
         border-radius: 2px;
         background-color: #E9E9E1;
 
-        .input-mysterytrophy-dialog
-        {
-            width: 380px;
+        .input-mysterytrophy-dialog {
+            width: min(380px, 100%);
+            min-width: 0;
             border: 1px solid black;
 
-            .input-mysterytrophy
-            {
-                width: 350px;
+            .input-mysterytrophy {
+                width: 100%;
+                min-width: 0;
                 border: 0;
                 outline: 0;
             }
 
-            .mysterytrophy-pencil-image
-            {
+            .mysterytrophy-pencil-image {
                 width: 16px;
                 height: 16px;
                 position: relative;
@@ -679,9 +803,26 @@
             }
         }
 
-        .text-decoration
-        {
+        .text-decoration {
             text-decoration: underline;
         }
+    }
+}
+
+@media (max-width: 560px), (max-height: 460px) {
+    .octane-widget-crafting {
+        .crafting-widget-layout {
+            flex-direction: column;
+            overflow: auto;
+        }
+
+        .crafting-widget-pane {
+            width: 100%;
+            min-height: 0;
+        }
+    }
+
+    .octane-widget-exchange-credit {
+        height: auto;
     }
 }

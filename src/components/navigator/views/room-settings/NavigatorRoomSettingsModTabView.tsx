@@ -1,4 +1,4 @@
-import { BannedUserData, BannedUsersFromRoomEvent, RoomBannedUsersComposer, RoomModerationSettings, RoomUnbanUserComposer } from '@nitrots/nitro-renderer';
+import { BannedUserData, BannedUsersFromRoomEvent, RoomBannedUsersComposer, RoomModerationSettings, RoomUnbanUserComposer } from '@octane/renderer';
 import { FC, useEffect, useState } from 'react';
 import { IRoomData, LocalizeText, SendMessageComposer } from '../../../../api';
 import { Button, Column, Flex, Grid, Text, UserProfileIconView } from '../../../../common';
@@ -44,14 +44,14 @@ export const NavigatorRoomSettingsModTabView: FC<NavigatorRoomSettingsTabViewPro
     }, [roomData.roomId]);
 
     return (
-        <Grid overflow="auto">
+        <Grid>
             <Column size={6}>
                 <NavigatorRoomSettingsSectionView
                     title={`${LocalizeText('navigator.roomsettings.moderation.banned.users')} (${bannedUsers.length})`}
                     gap={1}
                     className="h-full"
                 >
-                    <Flex overflow="hidden" className="nitro-card-panel list-container p-2">
+                    <Flex overflow="hidden" className="octane-card-panel list-container p-2">
                         <Column fullWidth overflow="auto" gap={1}>
                             {bannedUsers &&
                                 bannedUsers.length > 0 &&

@@ -1,12 +1,13 @@
-import { ColorConverter } from '@nitrots/nitro-renderer';
+import { ColorConverter } from '@octane/renderer';
 import { FC, useMemo, useState } from 'react';
-import { FaExchangeAlt, FaFillDrip, FaSyncAlt } from 'react-icons/fa';
-import { IPurchasableOffer, ProductTypeEnum, SanitizeHtml } from '../../../../../api';
+import { FaFillDrip } from 'react-icons/fa';
+import { IPurchasableOffer, SanitizeHtml } from '../../../../../api';
 import { AutoGrid, Button, Column, LayoutGridItem, Text } from '../../../../../common';
 import { useCatalogData, useCatalogUiState } from '../../../../../hooks';
 import { CatalogGridOfferView } from '../common/CatalogGridOfferView';
 import { CatalogAddOnBadgeWidgetView } from '../widgets/CatalogAddOnBadgeWidgetView';
 import { CatalogLimitedItemWidgetView } from '../widgets/CatalogLimitedItemWidgetView';
+import { CatalogPreviewControls } from '../widgets/CatalogPreviewControls';
 import { CatalogPurchaseWidgetView } from '../widgets/CatalogPurchaseWidgetView';
 import { CatalogSpinnerWidgetView } from '../widgets/CatalogSpinnerWidgetView';
 import { CatalogTotalPriceWidget } from '../widgets/CatalogTotalPriceWidget';
@@ -111,7 +112,7 @@ export const CatalogLayoutColorGroupingView: FC<CatalogLayoutColorGroupViewProps
             {/* Top: two visible rows of furni tiles. Tile is 70px tall
                and the AutoGrid handles its own overflow if there are
                more than two rows worth of offers. */}
-            <div className="nitro-catalog-color-grid-shell shrink-0">
+            <div className="octane-catalog-color-grid-shell shrink-0">
                 {(!colorsShowing || !currentOffer || !colorableItems.has(currentOffer.product.furnitureData.className)) && (
                     <AutoGrid columnCount={7} columnMinHeight={70} columnMinWidth={45}>
                         {offers.map((offer, index) => (
@@ -130,7 +131,7 @@ export const CatalogLayoutColorGroupingView: FC<CatalogLayoutColorGroupViewProps
                     </AutoGrid>
                 )}
                 {colorsShowing && currentOffer && colorableItems.has(currentOffer.product.furnitureData.className) && (
-                    <div className="nitro-catalog-color-swatches flex flex-wrap gap-1 p-2 overflow-auto">
+                    <div className="octane-catalog-color-swatches flex flex-wrap gap-1 p-2 overflow-auto">
                         {colorableItems.get(currentOffer.product.furnitureData.className).map((color, index) => (
                             <LayoutGridItem
                                 key={index}
@@ -156,25 +157,10 @@ export const CatalogLayoutColorGroupingView: FC<CatalogLayoutColorGroupViewProps
                 </Column>
             )}
             {currentOffer && (
-                <div className="nitro-catalog-offer-panel flex flex-col items-center grow overflow-hidden gap-2">
-                    <div className="nitro-catalog-offer-preview relative flex items-center justify-center overflow-hidden">
-                        {currentOffer.product.productType !== ProductTypeEnum.BADGE && (
-                            <>
-                                <button
-                                    className="nitro-catalog-preview-btn nitro-catalog-preview-rotate"
-                                    onClick={() => roomPreviewer?.changeRoomObjectDirection()}
-                                >
-                                    <FaSyncAlt />
-                                </button>
-                                <button
-                                    className="nitro-catalog-preview-btn nitro-catalog-preview-state"
-                                    onClick={() => roomPreviewer?.changeRoomObjectState()}
-                                >
-                                    <FaExchangeAlt />
-                                </button>
-                            </>
-                        )}
-                        <CatalogViewProductWidgetView />
+                <div className="octane-catalog-offer-panel flex flex-col items-center grow overflow-hidden gap-2">
+                    <div className="octane-catalog-offer-preview relative flex items-center justify-center overflow-hidden">
+                        <CatalogPreviewControls productType={currentOffer.product.productType} roomPreviewer={roomPreviewer} />
+                        <CatalogViewProductWidgetView height={348} />
                         <CatalogAddOnBadgeWidgetView className="bg-muted rounded bottom-1 inset-e-1" position="absolute" />
                         {currentOffer.product.furnitureData.hasIndexedColor && (
                             <Button className="bottom-1 inset-s-1" position="absolute" onClick={(event) => setColorsShowing((prev) => !prev)}>

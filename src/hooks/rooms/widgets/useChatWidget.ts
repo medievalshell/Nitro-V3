@@ -12,7 +12,7 @@ import {
     RoomSessionChatEvent,
     RoomUserData,
     SystemChatStyleEnum
-} from '@nitrots/nitro-renderer';
+} from '@octane/renderer';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ChatBubbleMessage,
@@ -22,12 +22,14 @@ import {
     GetConfigurationValue,
     GetRoomObjectScreenLocation,
     IRoomChatSettings,
+    loadEmojiShortcodes,
     LocalizeText,
     PlaySound,
     RoomChatFormatter
 } from '../../../api';
+import { SoundboardRoomMessageEvent } from '../../../events';
 import { useChatHistory } from './../../chat-history';
-import { useMessageEvent, useNitroEvent } from '../../events';
+import { useMessageEvent, useOctaneEvent, useUiEvent } from '../../events';
 import { useUserDataSnapshot } from '../../session/useSessionSnapshots';
 import { useTranslation } from '../../translation';
 import { useRoom } from '../useRoom';
@@ -49,7 +51,7 @@ const useChatWidgetState = () => {
     const isDisposed = useRef(false);
     // Reactive: re-renders if the session-data snapshot flips (e.g.
     // reconnect under a different user id). Safe to call here —
-    // useChatWidget is NOT wrapped in useBetween (see export below),
+    // useChatWidget is not singleton-backed (see export below),
     // so the real React dispatcher is in scope and
     // useSyncExternalStore installs correctly.
     const ownUserId = useUserDataSnapshot().userId || -1;
@@ -117,7 +119,7 @@ const useChatWidgetState = () => {
         }
     }, [chatSettings]);
 
-    useNitroEvent<RoomSessionChatEvent>(RoomSessionChatEvent.CHAT_EVENT, async (event) => {
+    useOctaneEvent<RoomSessionChatEvent>(RoomSessionChatEvent.CHAT_EVENT, async (event) => {
         const roomObject = GetRoomEngine().getRoomObject(roomSession.roomId, event.objectId, RoomObjectCategory.UNIT);
         const bubbleLocation = roomObject ? GetRoomObjectScreenLocation(roomSession.roomId, roomObject?.id, RoomObjectCategory.UNIT) : { x: 0, y: 0 };
         const userData = roomObject ? roomSession.userDataManager.getUserDataByIndex(event.objectId) : new RoomUserData(-1);
@@ -227,6 +229,9 @@ const useChatWidgetState = () => {
             imageUrl,
             color
         );
+        // The renderer adds bubbleWidthOverride to the chat event in Octane-Renderer#212; until that
+        // lands the published event has no such field, so it is read as optional.
+        chatMessage.bubbleWidthOverride = (event as RoomSessionChatEvent & { bubbleWidthOverride?: number }).bubbleWidthOverride ?? -1;
 
         if (outgoingTranslation) {
             applyTranslationToBubble(
@@ -267,6 +272,7 @@ const useChatWidgetState = () => {
                       webId: userData.webID,
                       entityId: userData.roomIndex,
                       name: username,
+                      look: userData.figure,
                       imageUrl,
                       style: styleId,
                       chatType: chatType,
@@ -303,12 +309,58 @@ const useChatWidgetState = () => {
         });
     });
 
-    useNitroEvent<RoomDragEvent>(RoomDragEvent.ROOM_DRAG, (event) => {
+    useUiEvent<SoundboardRoomMessageEvent>(SoundboardRoomMessageEvent.ROOM_MESSAGE, (event) => {
+        if (!roomSession) return;
+
+        const roomObject = GetRoomEngine().getRoomObject(roomSession.roomId, event.actorRoomIndex, RoomObjectCategory.UNIT);
+        const bubbleLocation = roomObject ? GetRoomObjectScreenLocation(roomSession.roomId, roomObject.id, RoomObjectCategory.UNIT) : { x: 0, y: 0 };
+        const message = LocalizeText('soundboard.room.played', ['user', 'sound'], [event.username, event.soundName]);
+        const bubble = new ChatBubbleMessage(
+            -1,
+            -1,
+            roomSession.roomId,
+            message,
+            RoomChatFormatter(message),
+            '',
+            bubbleLocation,
+            1,
+            SystemChatStyleEnum.BOT,
+            null,
+            null
+        );
+
+        setChatMessages((previous) => {
+            const next = [...previous, bubble];
+
+            if (next.length > CHAT_MESSAGES_MAX) next.shift();
+
+            return next;
+        });
+
+        addChatEntry({
+            id: -1,
+            webId: -1,
+            entityId: event.actorRoomIndex,
+            name: LocalizeText('soundboard.title'),
+            message,
+            roomId: roomSession.roomId,
+            timestamp: ChatHistoryCurrentDate(),
+            type: ChatEntryType.TYPE_ROOM_INFO
+        });
+    });
+
+    useOctaneEvent<RoomDragEvent>(RoomDragEvent.ROOM_DRAG, (event) => {
         if (!chatMessages.length || event.roomId !== roomSession.roomId) return;
 
         const offsetX = event.offsetX;
 
-        chatMessages.forEach((chat) => chat.elementRef && (chat.left += offsetX));
+        chatMessages.forEach((chat) => {
+            if (!chat.elementRef) return;
+
+            chat.left += offsetX;
+
+            if (chat.location) chat.location = { ...chat.location, x: chat.location.x + offsetX };
+        });
     });
 
     useMessageEvent<GetGuestRoomResultEvent>(GetGuestRoomResultEvent, (event) => {
@@ -327,6 +379,8 @@ const useChatWidgetState = () => {
 
     useEffect(() => {
         isDisposed.current = false;
+
+        if (GetConfigurationValue<boolean>('chat.emoji.enabled', true)) loadEmojiShortcodes();
 
         return () => {
             isDisposed.current = true;

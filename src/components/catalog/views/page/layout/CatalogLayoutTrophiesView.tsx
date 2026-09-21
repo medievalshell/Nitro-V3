@@ -1,10 +1,8 @@
 import { FC, useEffect, useState } from 'react';
-import { FaEdit, FaPen, FaTrophy } from 'react-icons/fa';
+import { FaPen, FaTrophy } from 'react-icons/fa';
 import { LocalizeText, ProductTypeEnum, SanitizeHtml } from '../../../../../api';
 import { Text } from '../../../../../common';
 import { useCatalogData, useCatalogUiState } from '../../../../../hooks';
-import { useCatalogAdmin } from '../../../CatalogAdminContext';
-import { CatalogAdminQuickActionsView } from '../../admin/CatalogAdminQuickActionsView';
 import { CatalogAddOnBadgeWidgetView } from '../widgets/CatalogAddOnBadgeWidgetView';
 import { CatalogItemGridWidgetView } from '../widgets/CatalogItemGridWidgetView';
 import { CatalogPurchaseWidgetView } from '../widgets/CatalogPurchaseWidgetView';
@@ -17,8 +15,6 @@ export const CatalogLayoutTrophiesView: FC<CatalogLayoutProps> = (props) => {
     const [trophyText, setTrophyText] = useState<string>('');
     const { currentOffer = null } = useCatalogData();
     const { setPurchaseOptions = null } = useCatalogUiState();
-    const catalogAdmin = useCatalogAdmin();
-    const adminMode = catalogAdmin?.adminMode ?? false;
 
     useEffect(() => {
         if (!currentOffer) return;
@@ -36,23 +32,20 @@ export const CatalogLayoutTrophiesView: FC<CatalogLayoutProps> = (props) => {
 
     return (
         <div className="flex flex-col h-full gap-2">
-            {/* Admin: quick actions */}
-            <CatalogAdminQuickActionsView />
-
             {/* Selected trophy card. shrink-0 + no overflow-hidden so the
                  Buy button stays inside the panel even when the grid below
                  holds many trophies. */}
             {currentOffer ? (
-                <div className="nitro-catalog-trophy-card flex gap-0 bg-white rounded border-2 border-warning/40 shrink-0">
+                <div className="octane-catalog-trophy-card flex gap-0 bg-white rounded border-2 border-warning/40 shrink-0">
                     {/* Preview */}
-                    <div className="nitro-catalog-trophy-preview w-[120px] min-w-[120px] relative flex items-center justify-center border-r-2 border-warning/30">
+                    <div className="octane-catalog-trophy-preview w-[120px] min-w-[120px] relative flex items-center justify-center border-r-2 border-warning/30">
                         {currentOffer.product.productType !== ProductTypeEnum.BADGE ? (
                             <>
                                 <CatalogViewProductWidgetView />
                                 <CatalogAddOnBadgeWidgetView className="bg-muted rounded bottom-1 right-1 absolute" />
                             </>
                         ) : (
-                            <CatalogAddOnBadgeWidgetView className="scale-2" />
+                            <CatalogAddOnBadgeWidgetView className="scale-200" />
                         )}
                     </div>
                     {/* Info */}
@@ -60,22 +53,7 @@ export const CatalogLayoutTrophiesView: FC<CatalogLayoutProps> = (props) => {
                         <div className="flex items-center gap-1.5">
                             <FaTrophy className="text-warning text-[11px]" />
                             <Text className="text-[12px]! font-bold text-dark leading-tight">{currentOffer.localizationName}</Text>
-                            {adminMode && (
-                                <FaEdit
-                                    className="text-primary text-[11px] cursor-pointer hover:text-dark transition-colors shrink-0"
-                                    title={LocalizeText('catalog.admin.offer.edit')}
-                                    onClick={() => catalogAdmin.setEditingOffer(currentOffer)}
-                                />
-                            )}
                         </div>
-                        {adminMode && (
-                            <div className="flex items-center gap-1 flex-wrap">
-                                <span className="text-[8px] font-mono text-white bg-gray-600 px-1 py-px rounded">
-                                    ID: {currentOffer.product.productClassId}
-                                </span>
-                                <span className="text-[8px] font-mono text-white bg-primary px-1 py-px rounded">Offer: {currentOffer.offerId}</span>
-                            </div>
-                        )}
                         <CatalogTotalPriceWidget />
                         {!canPurchase && <span className="text-[9px] text-warning italic">{LocalizeText('catalog.trophies.write.hint')}</span>}
                         <div className="flex gap-1.5">
@@ -110,7 +88,7 @@ export const CatalogLayoutTrophiesView: FC<CatalogLayoutProps> = (props) => {
                 </div>
                 <div className="relative">
                     <textarea
-                        className={`nitro-catalog-trophy-inscription w-full h-[60px] text-[11px] rounded p-2 pr-3 resize-none focus:outline-none transition-all border-2 ${trophyText.length > 0 ? 'has-text' : ''}`}
+                        className={`octane-catalog-trophy-inscription w-full h-[60px] text-[11px] rounded p-2 pr-3 resize-none focus:outline-none transition-all border-2 ${trophyText.length > 0 ? 'has-text' : ''}`}
                         maxLength={200}
                         placeholder={LocalizeText('catalog.trophies.inscription.placeholder')}
                         value={trophyText}

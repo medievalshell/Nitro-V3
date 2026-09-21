@@ -69,7 +69,7 @@ export const HousekeepingRoomsTab: FC = () => {
                     <input
                         type="number"
                         min={1}
-                        className="grow text-sm bg-transparent outline-none placeholder:text-zinc-400"
+                        className="grow text-sm bg-transparent outline-none placeholder:text-black placeholder:italic"
                         placeholder={
                             currentRoomId > 0
                                 ? `${LocalizeText('housekeeping.room.search.placeholder')} · empty → current #${currentRoomId}`
@@ -97,7 +97,7 @@ export const HousekeepingRoomsTab: FC = () => {
                 <div className="relative overflow-hidden rounded-lg border border-sky-200 bg-gradient-to-br from-sky-50 via-white to-violet-50 p-3 shadow-sm">
                     <div className="flex items-start gap-3">
                         <div className="rounded-full bg-sky-100 p-2 shrink-0 flex items-center justify-center">
-                            <span className="nitro-icon nitro-icon-hk-hero icon-rooms" />
+                            <span className="octane-icon octane-icon-hk-hero icon-rooms" />
                         </div>
                         <div className="grow min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
@@ -206,7 +206,7 @@ export const HousekeepingRoomsTab: FC = () => {
                     <input
                         type="number"
                         min={1}
-                        className="w-24 px-1.5 py-1 rounded border border-violet-200 bg-white text-xs tabular-nums focus:outline-none focus:ring-1 focus:ring-violet-400"
+                        className="w-24 px-1.5 py-1 rounded border border-violet-200 bg-white text-xs tabular-nums focus:outline-none focus:ring-1 focus:ring-violet-400 placeholder:text-black placeholder:italic"
                         placeholder={LocalizeText('housekeeping.room.transfer.new_owner')}
                         value={newOwnerId || ''}
                         onChange={(event) => setNewOwnerId(parseInt(event.target.value) || 0)}

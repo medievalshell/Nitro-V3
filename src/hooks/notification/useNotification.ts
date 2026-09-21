@@ -2,12 +2,15 @@ import {
     AchievementNotificationMessageEvent,
     ActivityPointNotificationMessageEvent,
     BadgeReceivedEvent,
+    ChestNotificationEvent,
     ClubGiftNotificationEvent,
     ClubGiftSelectedEvent,
     ConnectionErrorEvent,
     GetLocalizationManager,
     GetRoomEngine,
     GetSessionDataManager,
+    GoToBreedingNestFailureEvent,
+    GoToBreedingNestFailureParser,
     HabboBroadcastMessageEvent,
     HotelClosedAndOpensEvent,
     HotelClosesAndWillOpenAtEvent,
@@ -27,9 +30,9 @@ import {
     UserBannedMessageEvent,
     Vector3d,
     WiredRewardResultMessageEvent
-} from '@nitrots/nitro-renderer';
+} from '@octane/renderer';
 import { useCallback, useState } from 'react';
-import { useBetween } from 'use-between';
+import { registerSharedHook, useSharedHook } from '@/state/useSharedHook';
 import {
     GetConfigurationValue,
     IMentionEntry,
@@ -45,9 +48,14 @@ import {
     ProductImageUtility,
     TradingNotificationType
 } from '../../api';
+import { AchievementNotificationBubbleItem } from '../../api/notification/AchievementNotificationBubbleItem';
+import { localizeWithFallback } from '../../api/utils/localizeWithFallback';
 import { useMessageEvent } from '../events';
+import { useHotelAlertToastStore } from './hotelAlertToastStore';
 
 const cleanText = (text: string) => (text && text.length ? text.replace(/\\r/g, '\r') : '');
+
+const HOTEL_ALERT_TOAST_MAX_LENGTH = 240;
 
 const getTimeZeroPadded = (time: number) => {
     const text = '0' + time;
@@ -57,6 +65,37 @@ const getTimeZeroPadded = (time: number) => {
 
 let modDisclaimerTimeout: ReturnType<typeof setTimeout> = null;
 const recentBadgeNotifications = new Set<string>();
+
+/**
+ * Reads the "timeout" the server (or ui-config) sent with a notification: the number
+ * of seconds after which the alert closes on its own. Anything that is not a positive
+ * number of seconds leaves the alert open until the user dismisses it.
+ */
+export const getAutoCloseSeconds = (options: Map<string, string>): number => {
+    const seconds = parseInt(options.get('timeout'), 10);
+
+    return Number.isFinite(seconds) && seconds > 0 ? seconds : null;
+};
+
+/**
+ * Alert types that only ever show one window: a second announcement replaces the
+ * first instead of stacking on top of it. A closing announcement replaces the
+ * opening one it refers to, which is why they share the group.
+ */
+const SINGLE_ALERT_GROUPS: string[][] = [['hotel.event', 'hotel.event.ended']];
+
+export const prependSingleAlert = (alerts: NotificationAlertItem[], item: NotificationAlertItem): NotificationAlertItem[] => {
+    const group = SINGLE_ALERT_GROUPS.find((types) => types.includes(item.alertType));
+
+    return [item, ...(group ? alerts.filter((value) => !group.includes(value.alertType)) : alerts)];
+};
+
+export const prependSingleBubble = (alerts: NotificationBubbleItem[], item: NotificationBubbleItem): NotificationBubbleItem[] => {
+    const shouldReplace = item.notificationType === NotificationBubbleType.CLUBGIFT || item.notificationType === NotificationBubbleType.SOUNDBOARD;
+
+    return [item, ...(shouldReplace ? alerts.filter((value) => value.notificationType !== item.notificationType) : alerts)];
+};
+
 const useNotificationStore = () => {
     const [alerts, setAlerts] = useState<NotificationAlertItem[]>([]);
     const [bubbleAlerts, setBubbleAlerts] = useState<NotificationBubbleItem[]>([]);
@@ -95,19 +134,37 @@ const useNotificationStore = () => {
     };
 
     const simpleAlert = useCallback(
-        (message: string, type: string = null, clickUrl: string = null, clickUrlText: string = null, title: string = null, imageUrl: string = null) => {
+        (
+            message: string,
+            type: string = null,
+            clickUrl: string = null,
+            clickUrlText: string = null,
+            title: string = null,
+            imageUrl: string = null,
+            timeoutSeconds: number = null,
+            data: Map<string, string> = null
+        ) => {
             if (!title || !title.length) title = LocalizeText('notifications.broadcast.title');
 
             if (!type || !type.length) type = NotificationAlertType.DEFAULT;
 
-            const alertItem = new NotificationAlertItem([cleanText(message)], type, clickUrl, clickUrlText, title, imageUrl);
+            const alertItem = new NotificationAlertItem(
+                [cleanText(message)],
+                type,
+                clickUrl,
+                clickUrlText,
+                title,
+                imageUrl,
+                timeoutSeconds,
+                data
+            );
 
-            setAlerts((prevValue) => [alertItem, ...prevValue]);
+            setAlerts((prevValue) => prependSingleAlert(prevValue, alertItem));
         },
         []
     );
 
-    const showNitroAlert = useCallback(() => simpleAlert(null, NotificationAlertType.NITRO), [simpleAlert]);
+    const showOctaneAlert = useCallback(() => simpleAlert(null, NotificationAlertType.OCTANE), [simpleAlert]);
 
     const showSingleBubble = useCallback(
         (message: string, type: string, imageUrl: string = null, internalLink: string = null, senderName: string = '') => {
@@ -115,23 +172,12 @@ const useNotificationStore = () => {
 
             const notificationItem = new NotificationBubbleItem(message, type, imageUrl, internalLink, senderName);
 
-            setBubbleAlerts((prevValue) => {
-                if (type === NotificationBubbleType.CLUBGIFT) {
-                    const filteredAlerts = prevValue.filter((value) => value.notificationType !== NotificationBubbleType.CLUBGIFT);
-
-                    return [notificationItem, ...filteredAlerts];
-                }
-
-                return [notificationItem, ...prevValue];
-            });
+            setBubbleAlerts((prevValue) => prependSingleBubble(prevValue, notificationItem));
         },
         [bubblesDisabled]
     );
 
     const showMentionBubble = useCallback((mention: IMentionEntry) => {
-        // Mentions always surface: they have their own `mentions_ui.enabled` gate
-        // (checked in useMentionMessages) and are intentionally independent of the
-        // generic info-feed toggle, so EVERY received mention shows a bubble.
         const item = new MentionNotificationBubbleItem(mention);
 
         setBubbleAlerts((prevValue) => [item, ...prevValue]);
@@ -151,11 +197,12 @@ const useNotificationStore = () => {
         const linkTitle = getNotificationPart(options, type, 'linkTitle', false);
         const linkUrl = getNotificationPart(options, type, 'linkUrl', false);
         const image = getNotificationImageUrl(options, type);
+        const autoCloseSeconds = getAutoCloseSeconds(options);
 
         if (options.get('display') === 'BUBBLE') {
             showSingleBubble(LocalizeText(message), NotificationBubbleType.INFO, image, linkUrl);
         } else {
-            simpleAlert(LocalizeText(message), type, linkUrl, linkTitle, title, image);
+            simpleAlert(LocalizeText(message), type, linkUrl, linkTitle, title, image, autoCloseSeconds, options);
         }
 
         if (options.get('sound')) PlaySound(options.get('sound'));
@@ -284,7 +331,12 @@ const useNotificationStore = () => {
 
         if (raw.startsWith(sentinel)) {
             const body = raw.substring(sentinel.length).replace(/^[\r\n]+/, '');
-            simpleAlert(body, NotificationAlertType.NITRO_INFO, null, null, LocalizeText('nitro.info.title'));
+            simpleAlert(body, NotificationAlertType.OCTANE_INFO, null, null, LocalizeText('nitro.info.title'));
+            return;
+        }
+
+        if (GetConfigurationValue<boolean>('hotel_alert_animated', false) && raw.length <= HOTEL_ALERT_TOAST_MAX_LENGTH) {
+            useHotelAlertToastStore.getState().pushToast(raw);
             return;
         }
 
@@ -294,7 +346,7 @@ const useNotificationStore = () => {
     useMessageEvent<AchievementNotificationMessageEvent>(AchievementNotificationMessageEvent, (event) => {
         const parser = event.getParser();
 
-        if (recentBadgeNotifications.has(parser.data.badgeCode)) return;
+        if (bubblesDisabled) return;
 
         recentBadgeNotifications.add(parser.data.badgeCode);
         setTimeout(() => recentBadgeNotifications.delete(parser.data.badgeCode), 3000);
@@ -302,7 +354,35 @@ const useNotificationStore = () => {
         const badgeName = LocalizeBadgeName(parser.data.badgeCode);
         const badgeImage = GetSessionDataManager().getBadgeUrl(parser.data.badgeCode);
 
-        showSingleBubble(badgeName, NotificationBubbleType.BADGE_RECEIVED, badgeImage, parser.data.badgeCode);
+        const notification = new AchievementNotificationBubbleItem(
+            parser.data,
+            localizeWithFallback('notification.new.achievement', `Achievement unlocked: ${badgeName}`, ['achievement_name'], [badgeName]),
+            badgeImage
+        );
+
+        setBubbleAlerts((previous) => [notification, ...previous.filter((item) => item instanceof AchievementNotificationBubbleItem
+            ? item.badgeCode !== parser.data.badgeCode
+            : item.notificationType !== NotificationBubbleType.BADGE_RECEIVED || item.linkUrl !== parser.data.badgeCode)]);
+    });
+
+    useMessageEvent<ChestNotificationEvent>(ChestNotificationEvent, (event) => {
+        const parser = event.getParser();
+        const key = CHEST_NOTIFICATION_KEYS[parser.reason];
+
+        if (!key) return;
+
+        // A chest with no name of its own is still "your chest", so the message falls back rather
+        // than announcing an empty string.
+        const chestName = parser.chestName || LocalizeText('wiredchests.notification.unnamed');
+
+        showSingleBubble(
+            LocalizeText(
+                key,
+                ['chest', 'name', 'amount'],
+                [chestName, parser.actorName, String(parser.amount)],
+            ),
+            NotificationBubbleType.INFO,
+        );
     });
 
     useMessageEvent<BadgeReceivedEvent>(BadgeReceivedEvent, (event) => {
@@ -335,6 +415,11 @@ const useNotificationStore = () => {
 
     useMessageEvent<ModeratorMessageEvent>(ModeratorMessageEvent, (event) => {
         const parser = event.getParser();
+
+        if (GetConfigurationValue<boolean>('hotel_alert_animated', false) && !parser.url && parser.message.length <= HOTEL_ALERT_TOAST_MAX_LENGTH) {
+            useHotelAlertToastStore.getState().pushToast(cleanText(parser.message), LocalizeText('mod.alert.title'), 'staff');
+            return;
+        }
 
         showModeratorMessage(parser.message, parser.url, false);
     });
@@ -372,6 +457,20 @@ const useNotificationStore = () => {
             null,
             null,
             LocalizeText('opening.hours.title')
+        );
+    });
+
+    useMessageEvent<GoToBreedingNestFailureEvent>(GoToBreedingNestFailureEvent, (event) => {
+        const reason = event.getParser().reason;
+        const needsFood = reason === GoToBreedingNestFailureParser.PET_TOO_TIRED_TO_BREED;
+        const page = GetConfigurationValue<string>(`gotobreedingnestfailure.catalogpage.${needsFood ? 'food' : 'nests'}`, '');
+
+        simpleAlert(
+            LocalizeText(`gotobreedingnestfailure.message.${reason}`),
+            NotificationAlertType.DEFAULT,
+            page ? `catalog/open/${page}` : null,
+            page ? LocalizeText(`gotobreedingnestfailure.${needsFood ? 'getfood' : 'getnest'}`) : null,
+            LocalizeText('gotobreedingnestfailure.caption')
         );
     });
 
@@ -624,7 +723,7 @@ const useNotificationStore = () => {
         bubbleAlerts,
         confirms,
         simpleAlert,
-        showNitroAlert,
+        showOctaneAlert,
         showTradeAlert,
         showConfirm,
         showSingleBubble,
@@ -635,19 +734,28 @@ const useNotificationStore = () => {
     };
 };
 
+/** Reasons a chest tells its owner something, in the order the server numbers them. */
+const CHEST_NOTIFICATION_KEYS = [
+    'wiredchests.notification.full',
+    'wiredchests.notification.donation',
+    'wiredchests.notification.withdraw',
+    'wiredchests.notification.empty',
+    'wiredchests.notification.wired',
+];
+
 export const useNotificationState = () => {
-    const { alerts, bubbleAlerts, confirms } = useBetween(useNotificationStore);
+    const { alerts, bubbleAlerts, confirms } = useSharedHook(useNotificationStore);
 
     return { alerts, bubbleAlerts, confirms };
 };
 
 export const useNotificationActions = () => {
-    const { simpleAlert, showNitroAlert, showTradeAlert, showConfirm, showSingleBubble, showMentionBubble, closeAlert, closeBubbleAlert, closeConfirm } =
-        useBetween(useNotificationStore);
+    const { simpleAlert, showOctaneAlert, showTradeAlert, showConfirm, showSingleBubble, showMentionBubble, closeAlert, closeBubbleAlert, closeConfirm } =
+        useSharedHook(useNotificationStore);
 
     return {
         simpleAlert,
-        showNitroAlert,
+        showOctaneAlert,
         showTradeAlert,
         showConfirm,
         showSingleBubble,
@@ -658,4 +766,6 @@ export const useNotificationActions = () => {
     };
 };
 
-export const useNotification = () => useBetween(useNotificationStore);
+export const useNotification = () => useSharedHook(useNotificationStore);
+
+registerSharedHook(useNotificationStore);

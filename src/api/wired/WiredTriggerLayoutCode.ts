@@ -22,4 +22,23 @@ export class WiredTriggerLayout {
     public static USER_PERFORMS_ACTION: number = 21;
     public static CLOCK_COUNTER: number = 22;
     public static VARIABLE_CHANGED: number = 23;
+    public static USER_GETS_HANDITEM: number = 25;
+    public static DICE_ROLLED: number = 24;
+    public static PRESS_KEYBIND: number = 26;
+    public static TRANSACTION_COMPLETE: number = 27;
+    public static TRANSACTION_FAIL: number = 28;
+    /**
+     * Team wins and team loses take no settings. They used to answer CUSTOM, which shares code 13
+     * with the bot-reached trigger, so the window asked them which bot had arrived.
+     */
+    public static TEAM_GAME_RESULT: number = 29;
+    /** The long one-shot timer, in 5-second steps; it used to borrow EXECUTE_ONCE and its half seconds. */
+    public static EXECUTE_ONCE_LONG: number = 30;
+    /** Say your username: the keyword dialog without the keyword and the match mode it never read. */
+    public static AVATAR_SAYS_USERNAME: number = 31;
+    /**
+     * Furni state is changed by anyone or anything, wired effects included; TOGGLE_FURNI (4) only
+     * answers a user's click. The emulator registers it on wf_trg_state_changed.
+     */
+    public static STATE_CHANGE: number = 32;
 }

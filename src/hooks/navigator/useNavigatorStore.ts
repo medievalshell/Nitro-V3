@@ -1,6 +1,7 @@
 import {
     CanCreateRoomEventEvent,
     CantConnectMessageParser,
+    CategoriesWithVisitorCountEvent,
     CreateLinkEvent,
     FavouriteChangedEvent,
     FavouritesEvent,
@@ -23,7 +24,7 @@ import {
     NavigatorSavedSearch,
     NavigatorSearchesEvent,
     NavigatorTopLevelContext,
-    NitroEventType,
+    OctaneEventType,
     RoomDataParser,
     RoomEnterErrorEvent,
     RoomEntryInfoMessageEvent,
@@ -34,10 +35,11 @@ import {
     UserFlatCatsEvent,
     UserInfoEvent,
     UserPermissionsEvent
-} from '@nitrots/nitro-renderer';
+} from '@octane/renderer';
 import { useCallback, useState } from 'react';
 import {
     CreateRoomSession,
+    GenericErrorCode,
     GetConfigurationValue,
     INavigatorData,
     LocalizeText,
@@ -46,7 +48,7 @@ import {
     TryVisitRoom,
     VisitDesktop
 } from '../../api';
-import { useMessageEvent, useNitroEvent } from '../events';
+import { useMessageEvent, useOctaneEvent } from '../events';
 import { useNotification } from '../notification';
 import { useNavigatorFavouritesStore } from './navigatorFavouritesStore';
 import { useNavigatorUiStore } from './navigatorUiStore';
@@ -57,6 +59,8 @@ export const useNavigatorStore = () => {
     const [topLevelContext, setTopLevelContext] = useState<NavigatorTopLevelContext>(null);
     const [topLevelContexts, setTopLevelContexts] = useState<NavigatorTopLevelContext[]>(null);
     const [navigatorSearches, setNavigatorSearches] = useState<NavigatorSavedSearch[]>(null);
+    const [categoryVisitorCounts, setCategoryVisitorCounts] = useState<Map<number, number>>(null);
+    const [categoryMaxVisitorCounts, setCategoryMaxVisitorCounts] = useState<Map<number, number>>(null);
     const [navigatorData, setNavigatorData] = useState<INavigatorData>({
         settingsReceived: false,
         homeRoomId: 0,
@@ -213,7 +217,7 @@ export const useNavigatorStore = () => {
                 const parser = event.getParser();
                 // -100002 (wrong password) is handled by useDoorState — skip it here.
                 switch (parser.errorCode) {
-                    case 4009:
+                    case GenericErrorCode.VIP_REQUIRED:
                         simpleAlert(
                             LocalizeText('navigator.alert.need.to.be.vip'),
                             NotificationAlertType.DEFAULT,
@@ -222,7 +226,7 @@ export const useNavigatorStore = () => {
                             LocalizeText('generic.alert.title')
                         );
                         return;
-                    case 4010:
+                    case GenericErrorCode.ROOM_NAME_UNACCEPTABLE:
                         simpleAlert(
                             LocalizeText('navigator.alert.invalid_room_name'),
                             NotificationAlertType.DEFAULT,
@@ -290,8 +294,8 @@ export const useNavigatorStore = () => {
         }, [])
     );
 
-    useNitroEvent(
-        NitroEventType.SOCKET_RECONNECTING,
+    useOctaneEvent(
+        OctaneEventType.SOCKET_RECONNECTING,
         useCallback(() => {
             setNavigatorData((prev) => ({ ...prev, settingsReceived: false }));
         }, [])
@@ -382,12 +386,25 @@ export const useNavigatorStore = () => {
         }, [])
     );
 
+    useMessageEvent<CategoriesWithVisitorCountEvent>(
+        CategoriesWithVisitorCountEvent,
+        useCallback((event) => {
+            const data = event.getParser()?.data;
+            if (!data) return;
+
+            setCategoryVisitorCounts(new Map(data.categoryToCurrentUserCountMap));
+            setCategoryMaxVisitorCounts(new Map(data.categoryToMaxUserCountMap));
+        }, [])
+    );
+
     return {
         categories,
         eventCategories,
         topLevelContext,
         topLevelContexts,
         navigatorSearches,
+        categoryVisitorCounts,
+        categoryMaxVisitorCounts,
         navigatorData
     };
 };

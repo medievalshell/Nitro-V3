@@ -1,3 +1,4 @@
+import { HabbiconHubView } from './room/widgets/chat-input/HabbiconHubView';
 import {
     AddLinkEventTracker,
     GetCommunication,
@@ -7,11 +8,11 @@ import {
     MarkMentionsReadComposer,
     RemoveLinkEventTracker,
     RoomSessionEvent
-} from '@nitrots/nitro-renderer';
+} from '@octane/renderer';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FC, useEffect, useState } from 'react';
-import { GetConfigurationValue, SendMessageComposer } from '../api';
-import { useMentionMessages, useNitroEventReducer } from '../hooks';
+import { GetConfigurationValue, IsTouchDevice, SendMessageComposer } from '../api';
+import { useMentionMessages, useOctaneEventReducer } from '../hooks';
 import { markAllRead } from '../hooks/mentions/mentionsStore';
 import { AchievementsView } from './achievements/AchievementsView';
 import { GoogleAdsView } from './ads/GoogleAdsView';
@@ -24,12 +25,14 @@ import { CampaignView } from './campaign/CampaignView';
 import { CatalogView } from './catalog/CatalogView';
 import { ChatHistoryView } from './chat-history/ChatHistoryView';
 import { CustomizeNickIconView } from './customize/CustomizeNickIconView';
+import { DiscordSettingsView } from './discord/DiscordSettingsView';
 import { EmuStatsView } from './emustats/EmuStatsView';
 import { FloorplanEditorView } from './floorplan-editor/FloorplanEditorView';
 import { FortuneWheelView } from './fortune-wheel/FortuneWheelView';
 import { FriendsView } from './friends/FriendsView';
 import { FurniEditorView } from './furni-editor/FurniEditorView';
 import { GameCenterView } from './game-center/GameCenterView';
+import { SnowWarView } from './game-center/views/snowwar/SnowWarView';
 import { GroupsView } from './groups/GroupsView';
 import { GroupForumView } from './groups/views/forums/GroupForumView';
 import { GuideToolView } from './guide-tool/GuideToolView';
@@ -41,9 +44,10 @@ import { InventoryView } from './inventory/InventoryView';
 import { MentionsView } from './mentions';
 import { ModToolsView } from './mod-tools/ModToolsView';
 import { NavigatorView } from './navigator/NavigatorView';
-import { NitrobubbleHiddenView } from './nitrobubblehidden/NitrobubbleHiddenView';
-import { NitropediaView } from './nitropedia/NitropediaView';
+import { OctanebubbleHiddenView } from './octanebubblehidden/OctanebubbleHiddenView';
+import { OctanepediaView } from './octanepedia/OctanepediaView';
 import { ExternalPluginLoader } from './plugins/ExternalPluginLoader';
+import { DailyTasksView, QuestCompletedView, QuestsView, QuestTrackerView, RewardTrackView } from './quests';
 import { RadioView } from './radio/RadioView';
 import { RareValuesView } from './rare-values/RareValuesView';
 import { RightSideView } from './right-side/RightSideView';
@@ -52,6 +56,7 @@ import { SoundboardView } from './soundboard/SoundboardView';
 import { ToolbarView } from './toolbar/ToolbarView';
 import { TranslationBootstrap } from './translation/TranslationBootstrap';
 import { TranslationSettingsView } from './translation/TranslationSettingsView';
+import { TraxEditorView } from './trax-editor/TraxEditorView';
 import { UserProfileView } from './user-profile/UserProfileView';
 import { UserAccountSettingsView } from './user-settings/UserAccountSettingsView';
 import { UserSettingsView } from './user-settings/UserSettingsView';
@@ -59,28 +64,25 @@ import { VaultView } from './vault/VaultView';
 import { WiredView } from './wired/WiredView';
 import { WiredCreatorToolsView } from './wired-tools/WiredCreatorToolsView';
 
-export const MainView: FC<{}> = (props) => {
+export const MainView: FC<{}> = (props) =>
+{
     const [isReady, setIsReady] = useState(false);
     const [localizationVersion, setLocalizationVersion] = useState(0);
     const [mentionsVisible, setMentionsVisible] = useState(false);
 
     useMentionMessages();
 
-    // CREATED and ENDED can arrive out of order under flaky reconnects.
-    // Treating them as two independent setters left landingViewVisible
-    // contradicting the actual session state (stuck open in-room or
-    // stuck closed at the hotel view). The reducer carries the active
-    // session's roomId so a stale ENDED for a previous session is
-    // ignored — only an ENDED matching the tracked session (or when
-    // no session is active) is honored.
-    const { landingViewVisible } = useNitroEventReducer<{ sessionId: number | null; landingViewVisible: boolean }, RoomSessionEvent>(
+    const { landingViewVisible } = useOctaneEventReducer<{ sessionId: number | null; landingViewVisible: boolean }, RoomSessionEvent>(
         [RoomSessionEvent.CREATED, RoomSessionEvent.ENDED],
-        (state, event) => {
-            if (event.type === RoomSessionEvent.CREATED) {
+        (state, event) =>
+        {
+            if (event.type === RoomSessionEvent.CREATED)
+            {
                 return { sessionId: event.session.roomId, landingViewVisible: false };
             }
 
-            if (state.sessionId !== null && event.session.roomId !== state.sessionId) {
+            if (state.sessionId !== null && event.session.roomId !== state.sessionId)
+            {
                 return state;
             }
 
@@ -89,7 +91,8 @@ export const MainView: FC<{}> = (props) => {
         { sessionId: null, landingViewVisible: true }
     );
 
-    useEffect(() => {
+    useEffect(() =>
+    {
         setIsReady(true);
 
         GetRoomSessionManager().tryRestoreSession();
@@ -97,17 +100,22 @@ export const MainView: FC<{}> = (props) => {
         GetCommunication().connection.ready();
     }, []);
 
-    useEffect(() => {
+    useEffect(() =>
+    {
         const linkTracker: ILinkEventTracker = {
-            linkReceived: (url: string) => {
+            linkReceived: (url: string) =>
+            {
                 const parts = url.split('/');
 
                 if (parts.length < 2) return;
 
-                switch (parts[1]) {
+                switch (parts[1])
+                {
                     case 'open':
-                        if (parts.length > 2) {
-                            switch (parts[2]) {
+                        if (parts.length > 2)
+                        {
+                            switch (parts[2])
+                            {
                                 case 'credits':
                                     //HabboWebTools.openWebPageAndMinimizeClient(this._windowManager.getProperty(ExternalVariables.WEB_SHOP_RELATIVE_URL));
                                     break;
@@ -128,21 +136,23 @@ export const MainView: FC<{}> = (props) => {
         return () => RemoveLinkEventTracker(linkTracker);
     }, []);
 
-    useEffect(() => {
-        // Opening the inbox clears the unread badge both locally and
-        // server-side so the toolbar count resets immediately.
-        const clearMentionsBadge = () => {
+    useEffect(() =>
+    {
+        const clearMentionsBadge = () =>
+        {
             markAllRead();
             SendMessageComposer(new MarkMentionsReadComposer(0, 0));
         };
 
         const linkTracker: ILinkEventTracker = {
-            linkReceived: (url: string) => {
+            linkReceived: (url: string) =>
+            {
                 const parts = url.split('/');
 
                 if (parts.length < 2) return;
 
-                switch (parts[1]) {
+                switch (parts[1])
+                {
                     case 'show':
                         setMentionsVisible(true);
                         clearMentionsBadge();
@@ -151,12 +161,10 @@ export const MainView: FC<{}> = (props) => {
                         setMentionsVisible(false);
                         return;
                     case 'toggle':
-                        setMentionsVisible((prevValue) => {
+                        setMentionsVisible((prevValue) =>
+                        {
                             if (prevValue) return false;
 
-                            // Side-effect-free in the updater: defer the
-                            // badge-clear to a microtask so React's
-                            // double-invoke (StrictMode) can't fire it twice.
                             queueMicrotask(clearMentionsBadge);
                             return true;
                         });
@@ -171,12 +179,13 @@ export const MainView: FC<{}> = (props) => {
         return () => RemoveLinkEventTracker(linkTracker);
     }, []);
 
-    useEffect(() => {
+    useEffect(() =>
+    {
         const refreshLocalization = () => setLocalizationVersion((value) => value + 1);
 
-        window.addEventListener('nitro-localization-updated', refreshLocalization);
+        window.addEventListener('octane-localization-updated', refreshLocalization);
 
-        return () => window.removeEventListener('nitro-localization-updated', refreshLocalization);
+        return () => window.removeEventListener('octane-localization-updated', refreshLocalization);
     }, []);
 
     return (
@@ -205,32 +214,41 @@ export const MainView: FC<{}> = (props) => {
             <EmuStatsView />
             <AvatarEffectsView />
             <AchievementsView />
+            <HabbiconHubView />
             <NavigatorView />
-            <NitrobubbleHiddenView />
+            <OctanebubbleHiddenView />
             <InventoryView />
             <CatalogView />
             <FriendsView />
             <RightSideView />
             <UserSettingsView />
             <UserAccountSettingsView />
+            <DiscordSettingsView />
             <VaultView />
+            <QuestsView />
+            <QuestTrackerView />
+            <QuestCompletedView />
+            <DailyTasksView />
+            <RewardTrackView />
             <TranslationSettingsView />
             <UserProfileView />
             <GroupsView />
             <GroupForumView />
             <CameraWidgetView />
             <HelpView />
-            <NitropediaView />
+            <OctanepediaView />
             <GuideToolView />
             <HcCenterView />
             <CampaignView />
             <GameCenterView />
+            <SnowWarView />
             <FloorplanEditorView />
             <FurniEditorView />
             <RareValuesView />
             <FortuneWheelView />
             <SoundboardView />
-            {GetConfigurationValue<boolean>('radio_ui.enabled', false) && <RadioView />}
+            <TraxEditorView />
+            {GetConfigurationValue<boolean>('radio_ui.enabled', false) && !IsTouchDevice() && <RadioView />}
             {GetConfigurationValue<boolean>('mentions_ui.enabled', true) && mentionsVisible && <MentionsView onClose={() => setMentionsVisible(false)} />}
             <ExternalPluginLoader />
         </>

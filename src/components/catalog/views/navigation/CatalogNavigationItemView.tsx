@@ -1,27 +1,22 @@
-import { FC, useCallback, useRef, useState } from 'react';
-import { FaArrowsAlt, FaCaretDown, FaCaretUp, FaPlus, FaStar, FaTrash } from 'react-icons/fa';
-import { CatalogType, ICatalogNode, LocalizeText } from '../../../../api';
-import { useCatalogActions, useCatalogFavorites, useCatalogUiState } from '../../../../hooks';
-import { useCatalogAdmin } from '../../CatalogAdminContext';
+import { FC, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { FaArrowsAlt, FaCaretDown, FaCaretUp, FaPlus, FaTrash } from 'react-icons/fa';
+import { ICatalogNode, LocalizeText } from '../../../../api';
 import { CatalogIconView } from '../catalog-icon/CatalogIconView';
+import { CatalogNavigationRuntime } from './CatalogNavigationRuntime';
 import { CatalogNavigationSetView } from './CatalogNavigationSetView';
 
 export interface CatalogNavigationItemViewProps {
     node: ICatalogNode;
+    runtime: CatalogNavigationRuntime;
     child?: boolean;
 }
 
 export const CatalogNavigationItemView: FC<CatalogNavigationItemViewProps> = (props) => {
-    const { node = null, child = false } = props;
-    const { activateNode = null } = useCatalogActions();
-    const { currentType = CatalogType.NORMAL } = useCatalogUiState();
-    const catalogAdmin = useCatalogAdmin();
-    const adminMode = catalogAdmin?.adminMode ?? false;
-    const { isFavoritePage, toggleFavoritePage } = useCatalogFavorites();
-    const isFav = node ? isFavoritePage(node.pageId) : false;
+    const { node = null, runtime, child = false } = props;
+    const { activateNode, adminMode, createSubpage, deletePage, reorderPage } = runtime;
     const [isDragOver, setIsDragOver] = useState(false);
     const dragRef = useRef<HTMLDivElement>(null);
-    // Strip only technical SWF-style suffixes; labels such as
+    // Strip only technical technical suffixes; labels such as
     // "Flags (Wall)" or "Forest (Blue)" are meaningful catalog names.
     const swfLabel = (node?.localization || '').replace(/\s*\((?:BC|Hot)\)\s*$/i, '').trim();
 
@@ -66,55 +61,66 @@ export const CatalogNavigationItemView: FC<CatalogNavigationItemViewProps> = (pr
                     const targetParentId = node.isBranch ? node.pageId : (node.parent?.pageId ?? -1);
                     const targetIndex = node.isBranch ? 0 : (node.parent?.children?.indexOf(node) ?? 0);
 
-                    catalogAdmin?.reorderPage(data.pageId, targetParentId, targetIndex);
+                    reorderPage(data.pageId, targetParentId, targetIndex);
                 }
             } catch (err) {
                 // Invalid drag data
             }
         },
-        [adminMode, node, catalogAdmin]
+        [adminMode, node, reorderPage]
+    );
+
+    useEffect(() => {
+        if (!node?.isActive || !dragRef.current?.scrollIntoView) return;
+
+        dragRef.current.scrollIntoView({ block: 'nearest' });
+    }, [node?.isActive]);
+
+    const handleKeyDown = useCallback(
+        (event: KeyboardEvent<HTMLDivElement>) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+
+            event.preventDefault();
+            activateNode(node);
+        },
+        [activateNode, node]
     );
 
     return (
-        <div className={`nitro-catalog-navigation-node ${child ? 'is-child' : ''}`}>
+        <div className={`octane-catalog-navigation-node ${child ? 'is-child' : ''}`}>
             <div
                 ref={dragRef}
-                className={`nitro-catalog-navigation-item group/nav ${node.isActive ? 'is-active' : ''} ${node.isBranch ? 'is-branch' : 'is-leaf'} ${node.isOpen ? 'is-open' : ''} ${isDragOver ? 'is-drag-over' : ''}`}
+                className={`octane-catalog-navigation-item group/nav ${node.isActive ? 'is-active' : ''} ${node.isBranch ? 'is-branch' : 'is-leaf'} ${node.isOpen ? 'is-open' : ''} ${isDragOver ? 'is-drag-over' : ''}`}
                 draggable={adminMode}
+                role="treeitem"
+                tabIndex={0}
+                aria-expanded={node.isBranch ? node.isOpen : undefined}
+                aria-level={(node.depth ?? 0) + 1}
+                aria-selected={node.isActive}
                 onClick={() => activateNode(node)}
+                onKeyDown={handleKeyDown}
                 onDragLeave={adminMode ? handleDragLeave : undefined}
                 onDragOver={adminMode ? handleDragOver : undefined}
                 onDragStart={adminMode ? handleDragStart : undefined}
                 onDrop={adminMode ? handleDrop : undefined}
             >
                 {adminMode && (
-                    <FaArrowsAlt className="nitro-catalog-navigation-drag text-[7px] text-muted cursor-grab shrink-0 opacity-0 group-hover/nav:opacity-60" />
+                    <FaArrowsAlt className="octane-catalog-navigation-drag text-[7px] text-muted cursor-grab shrink-0 opacity-0 group-hover/nav:opacity-60" />
                 )}
-                <div className="nitro-catalog-navigation-icon">
+                <div className="octane-catalog-navigation-icon">
                     <CatalogIconView icon={node.iconId} />
                 </div>
-                <span className="nitro-catalog-navigation-label" title={adminMode ? `Page ID: ${node.pageId}` : undefined}>
+                <span className="octane-catalog-navigation-label" title={adminMode ? `Page ID: ${node.pageId}` : undefined}>
                     {swfLabel}
                 </span>
                 {adminMode && (
-                    <div className="nitro-catalog-navigation-admin flex items-center gap-1 opacity-0 group-hover/nav:opacity-100 transition-opacity">
+                    <div className="octane-catalog-navigation-admin flex items-center gap-1 opacity-0 group-hover/nav:opacity-100 transition-opacity">
                         <FaPlus
                             className="text-[8px] text-success hover:text-green-800"
                             title={LocalizeText('catalog.admin.create.subpage')}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                catalogAdmin.createPage({
-                                    caption: 'New Page',
-                                    captionSave: 'New Page',
-                                    catalogMode: currentType,
-                                    pageLayout: 'default_3x3',
-                                    iconImage: 0,
-                                    minRank: 1,
-                                    visible: '1',
-                                    enabled: '1',
-                                    orderNum: 0,
-                                    parentId: node.pageId
-                                });
+                                createSubpage(node);
                             }}
                         />
                         <FaTrash
@@ -122,27 +128,16 @@ export const CatalogNavigationItemView: FC<CatalogNavigationItemViewProps> = (pr
                             title={LocalizeText('catalog.admin.delete.page')}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm(LocalizeText('catalog.admin.delete.page.confirm', ['name'], [node.localization]))) {
-                                    catalogAdmin.deletePage(node.pageId);
-                                }
+                                deletePage(node);
                             }}
                         />
                     </div>
                 )}
-                {!adminMode && node.pageId > 0 && (
-                    <FaStar
-                        className={`text-[8px] transition-all duration-100 cursor-pointer shrink-0 ${isFav ? 'text-warning opacity-100' : 'text-muted opacity-0 group-hover/nav:opacity-100 hover:text-warning'}`}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            toggleFavoritePage(node.pageId);
-                        }}
-                    />
-                )}
                 {node.isBranch && (
-                    <span className="nitro-catalog-navigation-caret text-[9px] text-muted shrink-0">{node.isOpen ? <FaCaretUp /> : <FaCaretDown />}</span>
+                    <span className="octane-catalog-navigation-caret text-[9px] text-muted shrink-0">{node.isOpen ? <FaCaretUp /> : <FaCaretDown />}</span>
                 )}
             </div>
-            {node.isOpen && node.isBranch && <CatalogNavigationSetView child={true} node={node} />}
+            {node.isOpen && node.isBranch && <CatalogNavigationSetView child={true} node={node} runtime={runtime} />}
         </div>
     );
 };

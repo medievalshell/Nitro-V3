@@ -4,20 +4,23 @@ import {
     IRoomCameraWidgetEffect,
     RequestCameraConfigurationComposer,
     RoomCameraWidgetManagerEvent
-} from '@nitrots/nitro-renderer';
+} from '@octane/renderer';
 import { useEffect, useState } from 'react';
-import { useBetween } from 'use-between';
+import { registerSharedHook, useSharedHook } from '@/state/useSharedHook';
 import { CameraPicture, SendMessageComposer } from '../../api';
-import { useMessageEvent, useNitroEvent } from '../events';
+import { useMessageEvent, useOctaneEvent } from '../events';
 
 const useCameraState = () => {
     const [availableEffects, setAvailableEffects] = useState<IRoomCameraWidgetEffect[]>([]);
-    const [cameraRoll, setCameraRoll] = useState<CameraPicture[]>([]);
+    // AIR keeps five stable slots for the lifetime of the camera. Empty slots
+    // must remain addressable so a deleted photograph does not shift the
+    // photographs to its right and the user can choose where the next shot goes.
+    const [cameraRoll, setCameraRoll] = useState<Array<CameraPicture | null>>(() => Array(5).fill(null));
     const [selectedPictureIndex, setSelectedPictureIndex] = useState(-1);
-    const [myLevel, setMyLevel] = useState(10);
+    const [activePictureSlotIndex, setActivePictureSlotIndex] = useState(0);
     const [price, setPrice] = useState<{ credits: number; duckets: number; publishDucketPrice: number }>(null);
 
-    useNitroEvent<RoomCameraWidgetManagerEvent>(RoomCameraWidgetManagerEvent.INITIALIZED, (event) => {
+    useOctaneEvent<RoomCameraWidgetManagerEvent>(RoomCameraWidgetManagerEvent.INITIALIZED, (event) => {
         setAvailableEffects(Array.from(GetRoomCameraWidgetManager().effects.values()));
     });
 
@@ -35,7 +38,18 @@ const useCameraState = () => {
         SendMessageComposer(new RequestCameraConfigurationComposer());
     }, []);
 
-    return { availableEffects, cameraRoll, setCameraRoll, selectedPictureIndex, setSelectedPictureIndex, myLevel, price };
+    return {
+        availableEffects,
+        cameraRoll,
+        setCameraRoll,
+        selectedPictureIndex,
+        setSelectedPictureIndex,
+        activePictureSlotIndex,
+        setActivePictureSlotIndex,
+        price
+    };
 };
 
-export const useCamera = () => useBetween(useCameraState);
+export const useCamera = () => useSharedHook(useCameraState);
+
+registerSharedHook(useCameraState);

@@ -26,16 +26,21 @@ import {
     RoomUnitStatusEvent,
     UpdateFurniturePositionComposer,
     Vector3d,
+    WiredFurniRuntimeStateEvent,
+    WiredFurniRuntimeStateRequestComposer,
     WiredMonitorDataEvent,
     WiredMonitorRequestComposer,
     WiredUserInspectMoveComposer
-} from '@nitrots/nitro-renderer';
+} from '@octane/renderer';
 import { FC, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     AvatarInfoUtilities,
+    createPacketCooldownGate,
     GetRoomObjectBounds,
     GetRoomObjectScreenLocation,
+    IsOwnerOfFloorFurniture,
     LocalizeText,
+    localizeWithFallback,
     NotificationAlertType,
     SendMessageComposer,
     WiredSelectionVisualizer
@@ -48,14 +53,15 @@ import {
     LayoutAvatarImageView,
     LayoutPetImageView,
     LayoutRoomObjectImageView,
-    NitroCardContentView,
-    NitroCardHeaderView,
-    NitroCardTabsItemView,
-    NitroCardTabsView,
-    NitroCardView,
+    OctaneCardContentView,
+    OctaneCardHeaderView,
+    OctaneCardTabsItemView,
+    OctaneCardTabsView,
+    OctaneCardView,
     Text
 } from '../../common';
 import { useInventoryTrade, useMessageEvent, useNotification, useObjectSelectedEvent, useRoom, useWiredTools } from '../../hooks';
+import { WiredChestsTabView } from './WiredChestsTabView';
 import {
     DIRECTION_NAMES,
     EDITABLE_FURNI_VARIABLES,
@@ -71,6 +77,8 @@ import {
     WEEKDAY_NAMES,
     WIRED_CLOCK_REFRESH_MS,
     WIRED_FREEZE_EFFECT_IDS,
+    WIRED_FURNI_RUNTIME_ACTION_READ,
+    WIRED_FURNI_RUNTIME_ACTION_WRITE,
     WIRED_INSPECTION_REFRESH_MS,
     WIRED_MONITOR_ACTION_CLEAR_LOGS,
     WIRED_MONITOR_ACTION_FETCH,
@@ -84,7 +92,8 @@ import {
     formatVariableTimestamp,
     getHotelDateTimeParts,
     getHotelTimeFormatter,
-    normalizeMonitorReason
+    normalizeMonitorReason,
+    toVariableTextValues
 } from './WiredCreatorTools.helpers';
 import {
     HotelDateTimeParts,
@@ -105,7 +114,6 @@ import {
     VariableDefinition,
     VariableHighlightOverlay,
     VariableHighlightTarget,
-    VariableManageEntry,
     VariablesElementButton,
     VariablesElementType,
     VariableTextValue,
@@ -113,9 +121,14 @@ import {
 } from './WiredCreatorTools.types';
 import { WiredInspectionTabView } from './WiredInspectionTabView';
 import { WiredMonitorTabView } from './WiredMonitorTabView';
+import { WiredRoomLogsView } from './WiredRoomLogsView';
+import { WiredSelfDonationView } from './WiredSelfDonationView';
 import { WiredToolsSettingsTabView } from './WiredToolsSettingsTabView';
+import { HOLDER_TYPE_FURNI, HOLDER_TYPE_USER, WiredHolderDescription, WiredVariableOwnersView, wiredVariableIdOf } from './WiredVariableOwnersView';
 import { WiredVariablesTabView } from './WiredVariablesTabView';
 import { useWiredCreatorToolsUiStore } from './wiredCreatorToolsUiStore';
+
+const WIRED_FURNI_GRAVITY_MODEL_KEY = 'wired_furni_gravity';
 
 export const WiredCreatorToolsView: FC<{}> = () => {
     const isVisible = useWiredCreatorToolsUiStore((s) => s.isVisible);
@@ -130,6 +143,12 @@ export const WiredCreatorToolsView: FC<{}> = () => {
     const setSelectedFurni = useWiredCreatorToolsUiStore((s) => s.setSelectedFurni);
     const selectedFurniLiveState = useWiredCreatorToolsUiStore((s) => s.selectedFurniLiveState);
     const setSelectedFurniLiveState = useWiredCreatorToolsUiStore((s) => s.setSelectedFurniLiveState);
+    const [selectedFurniRuntimeState, setSelectedFurniRuntimeState] = useState<{
+        itemId: number;
+        key: string;
+        value: number;
+        supported: boolean;
+    }>(null);
     const selectedUser = useWiredCreatorToolsUiStore((s) => s.selectedUser);
     const setSelectedUser = useWiredCreatorToolsUiStore((s) => s.setSelectedUser);
     const selectedUserLiveState = useWiredCreatorToolsUiStore((s) => s.selectedUserLiveState);
@@ -137,6 +156,7 @@ export const WiredCreatorToolsView: FC<{}> = () => {
     const selectedUserActionVersion = useWiredCreatorToolsUiStore((s) => s.selectedUserActionVersion);
     const setSelectedUserActionVersion = useWiredCreatorToolsUiStore((s) => s.setSelectedUserActionVersion);
     const [globalClock, setGlobalClock] = useState(Date.now());
+    const [furniInternalRevision, setFurniInternalRevision] = useState(0);
     const [roomEnteredAt, setRoomEnteredAt] = useState(Date.now());
     const monitorSnapshot = useWiredCreatorToolsUiStore((s) => s.monitorSnapshot);
     const setMonitorSnapshot = useWiredCreatorToolsUiStore((s) => s.setMonitorSnapshot);
@@ -145,6 +165,10 @@ export const WiredCreatorToolsView: FC<{}> = () => {
     const [selectedMonitorLogDetails, setSelectedMonitorLogDetails] = useState<MonitorLogDetails>(null);
     const isMonitorHistoryOpen = useWiredCreatorToolsUiStore((s) => s.isMonitorHistoryOpen);
     const setIsMonitorHistoryOpen = useWiredCreatorToolsUiStore((s) => s.setIsMonitorHistoryOpen);
+    const isRoomLogsOpen = useWiredCreatorToolsUiStore((s) => s.isRoomLogsOpen);
+    const isSelfDonationOpen = useWiredCreatorToolsUiStore((s) => s.isSelfDonationOpen);
+    const setIsSelfDonationOpen = useWiredCreatorToolsUiStore((s) => s.setIsSelfDonationOpen);
+    const setIsRoomLogsOpen = useWiredCreatorToolsUiStore((s) => s.setIsRoomLogsOpen);
     const isMonitorInfoOpen = useWiredCreatorToolsUiStore((s) => s.isMonitorInfoOpen);
     const setIsMonitorInfoOpen = useWiredCreatorToolsUiStore((s) => s.setIsMonitorInfoOpen);
     const monitorHistorySeverityFilter = useWiredCreatorToolsUiStore((s) => s.monitorHistorySeverityFilter);
@@ -165,12 +189,6 @@ export const WiredCreatorToolsView: FC<{}> = () => {
     const setInspectionGiveValue = useWiredCreatorToolsUiStore((s) => s.setInspectionGiveValue);
     const isVariableManageOpen = useWiredCreatorToolsUiStore((s) => s.isVariableManageOpen);
     const setIsVariableManageOpen = useWiredCreatorToolsUiStore((s) => s.setIsVariableManageOpen);
-    const variableManageTypeFilter = useWiredCreatorToolsUiStore((s) => s.variableManageTypeFilter);
-    const setVariableManageTypeFilter = useWiredCreatorToolsUiStore((s) => s.setVariableManageTypeFilter);
-    const variableManageSort = useWiredCreatorToolsUiStore((s) => s.variableManageSort);
-    const setVariableManageSort = useWiredCreatorToolsUiStore((s) => s.setVariableManageSort);
-    const variableManagePage = useWiredCreatorToolsUiStore((s) => s.variableManagePage);
-    const setVariableManagePage = useWiredCreatorToolsUiStore((s) => s.setVariableManagePage);
     const selectedManagedVariableEntry = useWiredCreatorToolsUiStore((s) => s.selectedManagedVariableEntry);
     const setSelectedManagedVariableEntry = useWiredCreatorToolsUiStore((s) => s.setSelectedManagedVariableEntry);
     const selectedManagedHolderVariableId = useWiredCreatorToolsUiStore((s) => s.selectedManagedHolderVariableId);
@@ -190,6 +208,12 @@ export const WiredCreatorToolsView: FC<{}> = () => {
     const variableHighlightOverlays = useWiredCreatorToolsUiStore((s) => s.variableHighlightOverlays);
     const setVariableHighlightOverlays = useWiredCreatorToolsUiStore((s) => s.setVariableHighlightOverlays);
     const variableHighlightObjectsRef = useRef<Array<{ category: number; objectId: number }>>([]);
+    const monitorRequestGateRef = useRef<ReturnType<typeof createPacketCooldownGate> | null>(null);
+
+    if (!monitorRequestGateRef.current) {
+        monitorRequestGateRef.current = createPacketCooldownGate();
+    }
+
     const shouldPauseVariableSnapshotRefresh = !!editingVariable || !!editingManagedHolderVariableId || isInspectionGiveOpen || isManagedGiveOpen;
     const selectedVariableKeys = useWiredCreatorToolsUiStore((s) => s.selectedVariableKeys);
     const setSelectedVariableKeys = useWiredCreatorToolsUiStore((s) => s.setSelectedVariableKeys);
@@ -197,6 +221,7 @@ export const WiredCreatorToolsView: FC<{}> = () => {
     const { ownUser: tradeOwnUser = null, otherUser: tradeOtherUser = null, isTrading = false } = useInventoryTrade();
     const {
         roomSettings,
+        clearVariableForAllHolders,
         userVariableDefinitions,
         userVariableAssignments,
         furniVariableDefinitions,
@@ -213,7 +238,7 @@ export const WiredCreatorToolsView: FC<{}> = () => {
         updateFurniVariableValue,
         updateRoomVariableValue
     } = useWiredTools();
-    const { simpleAlert = null } = useNotification();
+    const { simpleAlert = null, showConfirm = null } = useNotification();
 
     const getFurniLiveState = useCallback(
         (objectId: number, category: number): InspectionFurniLiveState => {
@@ -662,6 +687,19 @@ export const WiredCreatorToolsView: FC<{}> = () => {
         });
     });
 
+    useMessageEvent<WiredFurniRuntimeStateEvent>(WiredFurniRuntimeStateEvent, (event) => {
+        const parser = event.getParser();
+
+        if (parser.key !== '@gravity' || parser.itemId !== selectedFurni?.objectId) return;
+
+        setSelectedFurniRuntimeState({
+            itemId: parser.itemId,
+            key: parser.key,
+            value: parser.value,
+            supported: parser.supported
+        });
+    });
+
     useMessageEvent<FurnitureFloorUpdateEvent>(FurnitureFloorUpdateEvent, (event) => {
         if (!selectedFurni) return;
 
@@ -818,17 +856,21 @@ export const WiredCreatorToolsView: FC<{}> = () => {
         setSelectedMonitorLogDetails(null);
     }, [selectedMonitorErrorType]);
 
+    const requestMonitorSnapshot = useCallback(() => {
+        monitorRequestGateRef.current?.request(() => {
+            SendMessageComposer(new WiredMonitorRequestComposer(WIRED_MONITOR_ACTION_FETCH));
+        });
+    }, []);
+
     useEffect(() => {
         if (!isVisible || activeTab !== 'monitor' || !roomSession?.roomId) return;
 
-        const requestSnapshot = () => SendMessageComposer(new WiredMonitorRequestComposer(WIRED_MONITOR_ACTION_FETCH));
+        requestMonitorSnapshot();
 
-        requestSnapshot();
-
-        const interval = window.setInterval(requestSnapshot, WIRED_MONITOR_POLL_MS);
+        const interval = window.setInterval(requestMonitorSnapshot, WIRED_MONITOR_POLL_MS);
 
         return () => window.clearInterval(interval);
-    }, [isVisible, activeTab, roomSession?.roomId]);
+    }, [isVisible, activeTab, roomSession?.roomId, requestMonitorSnapshot]);
 
     useEffect(() => {
         if (!isVisible || !roomSession?.roomId || !roomSettings.canInspect || shouldPauseVariableSnapshotRefresh) return;
@@ -976,12 +1018,21 @@ export const WiredCreatorToolsView: FC<{}> = () => {
         setIsVisible(false);
     }, [isVisible, roomSession?.roomId, roomSettings.isLoaded, roomSettings.canInspect]);
 
-    const selectedRoomObject =
-        roomSession && selectedFurni ? GetRoomEngine().getRoomObject(roomSession.roomId, selectedFurni.objectId, selectedFurni.category) : null;
-    const selectedUserRoomObject =
-        roomSession && selectedUser ? GetRoomEngine().getRoomObject(roomSession.roomId, selectedUser.roomIndex, RoomObjectCategory.UNIT) : null;
+    const [selectedRoomObject, setSelectedRoomObject] = useState<ReturnType<ReturnType<typeof GetRoomEngine>['getRoomObject']> | null>(null);
+    const [selectedUserRoomObject, setSelectedUserRoomObject] = useState<ReturnType<ReturnType<typeof GetRoomEngine>['getRoomObject']> | null>(null);
 
-    const currentTabLabel = useMemo(() => TABS.find((tab) => tab.key === activeTab)?.label ?? 'Monitor', [activeTab]);
+    useEffect(() => {
+        setSelectedRoomObject(
+            roomSession && selectedFurni ? GetRoomEngine().getRoomObject(roomSession.roomId, selectedFurni.objectId, selectedFurni.category) : null
+        );
+    }, [roomSession, selectedFurni, furniInternalRevision]);
+
+    useEffect(() => {
+        setSelectedUserRoomObject(
+            roomSession && selectedUser ? GetRoomEngine().getRoomObject(roomSession.roomId, selectedUser.roomIndex, RoomObjectCategory.UNIT) : null
+        );
+    }, [roomSession, selectedUser, selectedUserActionVersion]);
+
     const selectedMonitorErrorInfo = useMemo(() => {
         if (!selectedMonitorErrorType) return null;
 
@@ -1215,6 +1266,8 @@ export const WiredCreatorToolsView: FC<{}> = () => {
         const classId = selectedRoomObject.model.getValue<number>(RoomObjectVariable.FURNITURE_TYPE_ID);
         const tileSizeZ = Number(selectedFurnitureData?.tileSizeZ ?? 0);
         const liveState = selectedFurniLiveState ?? getFurniLiveState(selectedFurni.objectId, selectedFurni.category);
+        const opacity = Math.round(Math.max(0, Math.min(1, selectedRoomObject.model.getValue<number>(RoomObjectVariable.FURNITURE_ALPHA_MULTIPLIER) ?? 1)) * 100);
+        const gravity = Math.max(0, Math.min(1, selectedRoomObject.model.getValue<number>(WIRED_FURNI_GRAVITY_MODEL_KEY) ?? 0));
 
         const dynamicFlags: InspectionVariable[] = [];
 
@@ -1246,6 +1299,16 @@ export const WiredCreatorToolsView: FC<{}> = () => {
             { key: '@position_y', value: String(liveState?.positionY ?? 0), editable: canEditInspection },
             { key: '@rotation', value: String(liveState?.rotation ?? 0), editable: canEditInspection },
             { key: '@altitude', value: String(liveState?.altitude ?? 0), editable: canEditInspection },
+            { key: '@opacity', value: String(opacity), editable: canEditInspection },
+            {
+                key: '@gravity',
+                value: String(
+                    selectedFurniRuntimeState?.itemId === selectedFurni.objectId && selectedFurniRuntimeState.supported
+                        ? selectedFurniRuntimeState.value
+                        : gravity
+                ),
+                editable: canEditInspection
+            },
             { key: '@is_invisible', value: '0' },
             ...(wallItemOffset ? [{ key: '@wallitem_offset', value: wallItemOffset, editable: canEditInspection }] : []),
             {
@@ -1267,7 +1330,9 @@ export const WiredCreatorToolsView: FC<{}> = () => {
         wallItemOffset,
         canEditInspection,
         selectedFurniCustomVariableDefinitions,
-        selectedFurniAssignmentMap
+        selectedFurniAssignmentMap,
+        selectedFurniRuntimeState,
+        furniInternalRevision
     ]);
     const canEditSelectedUser = useMemo(() => {
         return !!selectedUser && !!roomSession && roomSettings.canModify;
@@ -1543,7 +1608,8 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                 hasCreationTime: true,
                 hasUpdateTime: true,
                 isTextConnected: definition.isTextConnected,
-                isAlwaysAvailable: false
+                isAlwaysAvailable: false,
+                textConnector: toVariableTextValues(definition.textConnector)
             }))
             .sort((left, right) => left.key.localeCompare(right.key, undefined, { sensitivity: 'base' }));
         const customFurniDefinitions: VariableDefinition[] = furniVariableDefinitions
@@ -1561,7 +1627,8 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                 hasCreationTime: true,
                 hasUpdateTime: true,
                 isTextConnected: definition.isTextConnected,
-                isAlwaysAvailable: false
+                isAlwaysAvailable: false,
+                textConnector: toVariableTextValues(definition.textConnector)
             }))
             .sort((left, right) => left.key.localeCompare(right.key, undefined, { sensitivity: 'base' }));
         const customRoomDefinitions: VariableDefinition[] = roomVariableDefinitions
@@ -1579,7 +1646,8 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                 hasCreationTime: false,
                 hasUpdateTime: true,
                 isTextConnected: definition.isTextConnected,
-                isAlwaysAvailable: false
+                isAlwaysAvailable: false,
+                textConnector: toVariableTextValues(definition.textConnector)
             }))
             .sort((left, right) => left.key.localeCompare(right.key, undefined, { sensitivity: 'base' }));
         const customContextDefinitions: VariableDefinition[] = contextVariableDefinitions
@@ -1597,7 +1665,8 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                 hasCreationTime: true,
                 hasUpdateTime: true,
                 isTextConnected: definition.isTextConnected,
-                isAlwaysAvailable: false
+                isAlwaysAvailable: false,
+                textConnector: toVariableTextValues(definition.textConnector)
             }))
             .sort((left, right) => left.key.localeCompare(right.key, undefined, { sensitivity: 'base' }));
 
@@ -1637,9 +1706,6 @@ export const WiredCreatorToolsView: FC<{}> = () => {
         });
     }, [variableDefinitionsByType]);
     useEffect(() => {
-        setVariableManageTypeFilter('ALL');
-        setVariableManageSort('highest_value');
-        setVariableManagePage(1);
         setSelectedManagedVariableEntry(null);
     }, [variablesType, selectedVariableKeys[variablesType]]);
     useEffect(() => {
@@ -1798,109 +1864,57 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                     { value: '2', text: 'Whisper' }
                 ];
             default:
-                return [];
+                return selectedVariableDefinition.textConnector ?? [];
         }
     }, [selectedVariableDefinition, variablesType]);
-    const variableManageEntries = useMemo((): VariableManageEntry[] => {
-        if (!selectedVariableDefinition?.itemId || selectedVariableDefinition.type !== 'Custom' || !roomSession) return [];
-        if (variablesType === 'context') return [];
+    const describeVariableHolder = useCallback(
+        (entityType: number, entityId: number, entityName: string): WiredHolderDescription => {
+            if (entityType === HOLDER_TYPE_USER) {
+                const userData = roomSession
+                    ? (roomSession.userDataManager.getUserData(entityId) ??
+                      roomSession.userDataManager.getBotData(entityId) ??
+                      roomSession.userDataManager.getRentableBotData(entityId) ??
+                      roomSession.userDataManager.getPetData(entityId))
+                    : null;
+                let categoryLabel = 'Habbo';
 
-        if (variablesType === 'user') {
-            const entries: VariableManageEntry[] = [];
-
-            for (const [userIdString, assignments] of Object.entries(userVariableAssignments)) {
-                const userId = Number(userIdString);
-                const assignment = assignments.find((entry) => entry.variableItemId === selectedVariableDefinition.itemId);
-
-                if (!assignment) continue;
-
-                const userData =
-                    roomSession.userDataManager.getUserData(userId) ??
-                    roomSession.userDataManager.getBotData(userId) ??
-                    roomSession.userDataManager.getRentableBotData(userId) ??
-                    roomSession.userDataManager.getPetData(userId);
-
-                let categoryLabel = 'Unknown';
-                let entityName = `#${userId}`;
-
-                if (userData) {
-                    entityName = userData.name || entityName;
-
-                    switch (userData.type) {
-                        case RoomObjectType.USER:
-                            categoryLabel = 'Habbo';
-                            break;
-                        case RoomObjectType.BOT:
-                            categoryLabel = 'Bot';
-                            break;
-                        case RoomObjectType.RENTABLE_BOT:
-                            categoryLabel = 'Rentable bot';
-                            break;
-                        case RoomObjectType.PET:
-                            categoryLabel = 'Pet';
-                            break;
-                    }
+                switch (userData?.type) {
+                    case RoomObjectType.BOT:
+                        categoryLabel = 'Bot';
+                        break;
+                    case RoomObjectType.RENTABLE_BOT:
+                        categoryLabel = 'Rentable bot';
+                        break;
+                    case RoomObjectType.PET:
+                        categoryLabel = 'Pet';
+                        break;
                 }
 
-                entries.push({
-                    entityId: userId,
-                    entityName,
-                    categoryLabel,
-                    createdAt: Number(assignment.createdAt ?? 0),
-                    updatedAt: Number(assignment.updatedAt ?? 0),
-                    value: assignment.value,
-                    manageLabel: 'Manage'
-                });
+                return { categoryLabel, entityName: userData?.name || entityName || `#${entityId}` };
             }
 
-            return entries;
-        }
-
-        if (variablesType === 'furni') {
-            const entries: VariableManageEntry[] = [];
-
-            for (const [furniIdString, assignments] of Object.entries(furniVariableAssignments)) {
-                const furniId = Number(furniIdString);
-                const assignment = assignments.find((entry) => entry.variableItemId === selectedVariableDefinition.itemId);
-
-                if (!assignment) continue;
-
-                const floorObject = GetRoomEngine().getRoomObject(roomSession.roomId, furniId, RoomObjectCategory.FLOOR);
-                const wallObject = floorObject ? null : GetRoomEngine().getRoomObject(roomSession.roomId, furniId, RoomObjectCategory.WALL);
+            if (entityType === HOLDER_TYPE_FURNI) {
+                const roomId = roomSession?.roomId ?? -1;
+                const floorObject = roomSession ? GetRoomEngine().getRoomObject(roomId, entityId, RoomObjectCategory.FLOOR) : null;
+                const wallObject = floorObject || !roomSession ? null : GetRoomEngine().getRoomObject(roomId, entityId, RoomObjectCategory.WALL);
                 const roomObject = floorObject ?? wallObject;
-                const category = floorObject ? RoomObjectCategory.FLOOR : wallObject ? RoomObjectCategory.WALL : -1;
                 const typeId = roomObject?.model?.getValue<number>(RoomObjectVariable.FURNITURE_TYPE_ID);
-                const furnitureData =
-                    category === RoomObjectCategory.WALL ? GetSessionDataManager().getWallItemData(typeId) : GetSessionDataManager().getFloorItemData(typeId);
+                const furnitureData = !roomObject
+                    ? null
+                    : wallObject
+                      ? GetSessionDataManager().getWallItemData(typeId)
+                      : GetSessionDataManager().getFloorItemData(typeId);
 
-                entries.push({
-                    entityId: furniId,
-                    entityName: furnitureData?.name || furnitureData?.className || `#${furniId}`,
-                    categoryLabel: category === RoomObjectCategory.WALL ? 'Wall furni' : 'Floor furni',
-                    createdAt: Number(assignment.createdAt ?? 0),
-                    updatedAt: Number(assignment.updatedAt ?? 0),
-                    value: assignment.value,
-                    manageLabel: 'Manage'
-                });
+                return {
+                    categoryLabel: wallObject ? 'Wall furni' : 'Floor furni',
+                    entityName: furnitureData?.name || furnitureData?.className || entityName || `#${entityId}`
+                };
             }
 
-            return entries;
-        }
-
-        const assignment = roomVariableAssignmentMap.get(selectedVariableDefinition.itemId);
-
-        return [
-            {
-                entityId: roomSession.roomId,
-                entityName: `Room #${roomSession.roomId}`,
-                categoryLabel: 'Global',
-                createdAt: 0,
-                updatedAt: Number(assignment?.updatedAt ?? 0),
-                value: assignment?.value ?? 0,
-                manageLabel: 'Manage'
-            }
-        ];
-    }, [selectedVariableDefinition, variablesType, roomSession, userVariableAssignments, furniVariableAssignments, roomVariableAssignmentMap]);
+            return { categoryLabel: 'Global', entityName: entityName || `Room #${entityId}` };
+        },
+        [roomSession]
+    );
     const canVariableHighlight =
         !!selectedVariableDefinition?.itemId &&
         selectedVariableDefinition.type === 'Custom' &&
@@ -2047,46 +2061,6 @@ export const WiredCreatorToolsView: FC<{}> = () => {
             ticker.remove(updateOverlays);
         };
     }, [isVariableHighlightActive, roomSession?.roomId, variableHighlightTargets]);
-    const variableManageTypeOptions = useMemo(() => {
-        switch (variablesType) {
-            case 'user':
-                return ['ALL', 'Habbo', 'Bot', 'Rentable bot', 'Pet'];
-            case 'furni':
-                return ['ALL', 'Floor furni', 'Wall furni'];
-            case 'context':
-                return ['ALL', 'Execution'];
-            default:
-                return ['ALL', 'Global'];
-        }
-    }, [variablesType]);
-    const filteredVariableManageEntries = useMemo(() => {
-        const filtered = variableManageEntries.filter((entry) => {
-            if (variableManageTypeFilter !== 'ALL' && entry.categoryLabel !== variableManageTypeFilter) return false;
-
-            return true;
-        });
-
-        filtered.sort((left, right) => {
-            switch (variableManageSort) {
-                case 'lowest_value':
-                    return Number(left.value ?? 0) - Number(right.value ?? 0);
-                case 'newest_update':
-                    return Number(right.updatedAt ?? 0) - Number(left.updatedAt ?? 0);
-                case 'oldest_update':
-                    return Number(left.updatedAt ?? 0) - Number(right.updatedAt ?? 0);
-                case 'newest_creation':
-                    return Number(right.createdAt ?? 0) - Number(left.createdAt ?? 0);
-                case 'oldest_creation':
-                    return Number(left.createdAt ?? 0) - Number(right.createdAt ?? 0);
-                case 'name':
-                    return left.entityName.localeCompare(right.entityName, undefined, { sensitivity: 'base' });
-                default:
-                    return Number(right.value ?? 0) - Number(left.value ?? 0);
-            }
-        });
-
-        return filtered;
-    }, [variableManageEntries, variableManageTypeFilter, variableManageSort]);
     const userVariableDefinitionsById = useMemo(
         () => new Map(userVariableDefinitions.map((definition) => [definition.itemId, definition])),
         [userVariableDefinitions]
@@ -2189,18 +2163,6 @@ export const WiredCreatorToolsView: FC<{}> = () => {
 
         return availableManagedHolderDefinitions.find((definition) => definition.itemId === managedGiveVariableItemId) ?? availableManagedHolderDefinitions[0];
     }, [availableManagedHolderDefinitions, managedGiveVariableItemId]);
-    const variableManageTypeLabel = useMemo(() => {
-        switch (variablesType) {
-            case 'furni':
-                return 'Furni type';
-            case 'global':
-                return 'Scope';
-            case 'context':
-                return 'Execution scope';
-            default:
-                return 'User type';
-        }
-    }, [variablesType]);
     const variableManageCategoryHeader = useMemo(() => {
         switch (variablesType) {
             case 'furni':
@@ -2340,48 +2302,32 @@ export const WiredCreatorToolsView: FC<{}> = () => {
 
         setEditingManagedHolderValue(String(selectedManagedHolderVariableEntry.value ?? 0));
     }, [selectedManagedHolderVariableEntry, editingManagedHolderVariableId]);
-    const variableManageDescription = useMemo(() => {
-        switch (variablesType) {
-            case 'furni':
-                return 'This tool lists every furni in the room that currently holds the selected variable.';
-            case 'global':
-                return 'This tool shows the current room-level state for the selected global variable.';
-            case 'context':
-                return 'Context variables live only inside a wired execution. Use the Variables tab to inspect their definitions, text mappings and execution-only behavior.';
-            default:
-                return 'This tool lists every user in the room that currently holds the selected variable.';
-        }
-    }, [variablesType]);
-    const variableManageSortOptions = useMemo(() => {
-        const options = [
-            { value: 'highest_value', label: 'Highest value' },
-            { value: 'lowest_value', label: 'Lowest value' },
-            { value: 'newest_update', label: 'Most recently updated' },
-            { value: 'oldest_update', label: 'Least recently updated' },
-            { value: 'name', label: 'Name' }
-        ];
-
-        if (selectedVariableDefinition?.hasCreationTime) {
-            options.splice(4, 0, { value: 'newest_creation', label: 'Newest creation' }, { value: 'oldest_creation', label: 'Oldest creation' });
-        }
-
-        return options;
-    }, [selectedVariableDefinition?.hasCreationTime]);
-    const variableManagePageSize = 12;
-    const variableManagePageCount = Math.max(1, Math.ceil(filteredVariableManageEntries.length / variableManagePageSize));
-    const clampedVariableManagePage = Math.min(variableManagePage, variableManagePageCount);
-    useEffect(() => {
-        if (variableManagePage <= variableManagePageCount) return;
-
-        setVariableManagePage(variableManagePageCount);
-    }, [variableManagePage, variableManagePageCount]);
-    const pagedVariableManageEntries = useMemo(() => {
-        const startIndex = (clampedVariableManagePage - 1) * variableManagePageSize;
-
-        return filteredVariableManageEntries.slice(startIndex, startIndex + variableManagePageSize);
-    }, [clampedVariableManagePage, filteredVariableManageEntries]);
-    const variableManageNoValueLabel = selectedVariableDefinition?.hasValue ? '/' : 'Not supported';
     const variableManageCanOpen = !!selectedVariableDefinition && selectedVariableDefinition.type === 'Custom' && variablesType !== 'context';
+    // Clearing reaches holders outside the room, so only the owner of the definition box gets the
+    // button; the server enforces the same rule.
+    const canVariableClear =
+        variableManageCanOpen &&
+        (variablesType === 'user' || variablesType === 'furni') &&
+        roomSettings.canModify &&
+        !!selectedVariableDefinition?.itemId &&
+        IsOwnerOfFloorFurniture(selectedVariableDefinition.itemId);
+    const confirmClearVariable = () => {
+        if (!canVariableClear || !showConfirm || !selectedVariableDefinition?.itemId) return;
+        const scope = variablesType === 'furni' ? 'furni' : 'user';
+        const itemId = selectedVariableDefinition.itemId;
+
+        showConfirm(
+            localizeWithFallback(
+                'wiredmenu.variable_overview.delete_all.desc',
+                'Are you sure you want to clear this variable? All users/furni that hold this variable will lose it. This action cannot be undone'
+            ),
+            () => clearVariableForAllHolders(scope, itemId),
+            null,
+            LocalizeText('generic.ok'),
+            LocalizeText('generic.cancel'),
+            localizeWithFallback('wiredmenu.variable_overview.delete_all.title', 'Clear this variable')
+        );
+    };
     const commitManagedHolderValueEdit = useCallback(() => {
         if (!selectedManagedVariableEntry || !selectedManagedHolderVariableEntry || !roomSettings.canModify || selectedManagedHolderVariableEntry.isReadOnly)
             return;
@@ -2672,6 +2618,23 @@ export const WiredCreatorToolsView: FC<{}> = () => {
             return;
         }
 
+        if (editingVariable === '@gravity') {
+            const parsed = parseInt(editingValue.trim(), 10);
+            if (!selectedFurni || !roomSession || (parsed !== 0 && parsed !== 1)) {
+                cancelVariableEdit();
+                return;
+            }
+            if (selectedFurniRuntimeState?.itemId === selectedFurni.objectId && selectedFurniRuntimeState.value === parsed) {
+                cancelVariableEdit();
+                return;
+            }
+
+            SendMessageComposer(new WiredFurniRuntimeStateRequestComposer(selectedFurni.objectId, WIRED_FURNI_RUNTIME_ACTION_WRITE, '@gravity', parsed));
+            setEditingVariable(null);
+            setEditingValue('');
+            return;
+        }
+
         if (!editingVariable || !selectedFurni || !selectedRoomObject || !roomSession) return;
 
         const currentLiveState = selectedFurniLiveState ?? getFurniLiveState(selectedFurni.objectId, selectedFurni.category);
@@ -2686,6 +2649,8 @@ export const WiredCreatorToolsView: FC<{}> = () => {
         let nextZ = currentLiveState.altitude / 100;
         let nextRotation = currentLiveState.rotation;
         let nextState: number = null;
+        let nextOpacity: number = null;
+        let nextGravity: number = null;
         let nextWallOffsetX: number = null;
         let nextWallOffsetY: number = null;
         let isValid = true;
@@ -2746,6 +2711,28 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                 nextState = parsed;
                 break;
             }
+            case '@opacity': {
+                const parsed = parseInt(editingValue.trim(), 10);
+
+                if (Number.isNaN(parsed)) {
+                    isValid = false;
+                    break;
+                }
+
+                nextOpacity = Math.max(0, Math.min(100, parsed));
+                break;
+            }
+            case '@gravity': {
+                const parsed = parseInt(editingValue.trim(), 10);
+
+                if (Number.isNaN(parsed)) {
+                    isValid = false;
+                    break;
+                }
+
+                nextGravity = parsed > 0 ? 1 : 0;
+                break;
+            }
             case '@wallitem_offset': {
                 if (selectedFurni.category !== RoomObjectCategory.WALL) {
                     isValid = false;
@@ -2767,6 +2754,39 @@ export const WiredCreatorToolsView: FC<{}> = () => {
 
         if (!isValid) {
             cancelVariableEdit();
+            return;
+        }
+
+        if (editingVariable === '@opacity') {
+            const currentOpacity = Math.round(
+                Math.max(0, Math.min(1, selectedRoomObject.model.getValue<number>(RoomObjectVariable.FURNITURE_ALPHA_MULTIPLIER) ?? 1)) * 100
+            );
+
+            if (nextOpacity === currentOpacity) {
+                cancelVariableEdit();
+                return;
+            }
+
+            selectedRoomObject.model.setValue(RoomObjectVariable.FURNITURE_ALPHA_MULTIPLIER, nextOpacity / 100);
+            SendMessageComposer(new WiredFurniRuntimeStateRequestComposer(selectedFurni.objectId, WIRED_FURNI_RUNTIME_ACTION_WRITE, '@opacity', nextOpacity));
+            setEditingVariable(null);
+            setEditingValue('');
+            return;
+        }
+
+        if (editingVariable === '@gravity') {
+            const currentGravity = Math.max(0, Math.min(1, selectedRoomObject.model.getValue<number>(WIRED_FURNI_GRAVITY_MODEL_KEY) ?? 0));
+
+            if (nextGravity === currentGravity) {
+                cancelVariableEdit();
+                return;
+            }
+
+            selectedRoomObject.model.setValue(WIRED_FURNI_GRAVITY_MODEL_KEY, nextGravity);
+            setFurniInternalRevision((previousValue) => previousValue + 1);
+            SendMessageComposer(new WiredFurniRuntimeStateRequestComposer(selectedFurni.objectId, WIRED_FURNI_RUNTIME_ACTION_WRITE, '@gravity', nextGravity));
+            setEditingVariable(null);
+            setEditingValue('');
             return;
         }
 
@@ -3059,6 +3079,14 @@ export const WiredCreatorToolsView: FC<{}> = () => {
     }, [inspectionType, selectedFurni?.objectId, selectedFurni?.category]);
 
     useEffect(() => {
+        setSelectedFurniRuntimeState(null);
+        if (!isVisible || inspectionType !== 'furni' || !roomSettings.canInspect || !selectedFurni || selectedFurni.category !== RoomObjectCategory.FLOOR)
+            return;
+
+        SendMessageComposer(new WiredFurniRuntimeStateRequestComposer(selectedFurni.objectId, WIRED_FURNI_RUNTIME_ACTION_READ, '@gravity', 0));
+    }, [isVisible, inspectionType, roomSettings.canInspect, selectedFurni?.objectId, selectedFurni?.category]);
+
+    useEffect(() => {
         if (inspectionType !== 'user' || !selectedUser) {
             setSelectedUserLiveState(null);
 
@@ -3096,21 +3124,21 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                     ))}
                 </div>
             )}
-            <NitroCardView
+            <OctaneCardView
                 className="min-w-[520px] max-w-[520px]"
                 theme="primary-slim"
                 uniqueKey="wired-creator-tools"
                 windowPosition={DraggableWindowPosition.TOP_LEFT}
             >
-                <NitroCardHeaderView headerText="Wired Creator Tools (:wired)" onCloseClick={() => setIsVisible(false)} />
-                <NitroCardTabsView justifyContent="start">
+                <OctaneCardHeaderView headerText="Wired Creator Tools (:wired)" onCloseClick={() => setIsVisible(false)} />
+                <OctaneCardTabsView justifyContent="start">
                     {TABS.map((tab) => (
-                        <NitroCardTabsItemView key={tab.key} isActive={activeTab === tab.key} onClick={() => setActiveTab(tab.key)}>
+                        <OctaneCardTabsItemView key={tab.key} isActive={activeTab === tab.key} onClick={() => setActiveTab(tab.key)}>
                             <Text>{tab.label}</Text>
-                        </NitroCardTabsItemView>
+                        </OctaneCardTabsItemView>
                     ))}
-                </NitroCardTabsView>
-                <NitroCardContentView className="text-black bg-[#e9e6d9]" gap={3}>
+                </OctaneCardTabsView>
+                <OctaneCardContentView className="text-black bg-[#e9e6d9]" gap={3}>
                     {activeTab === 'monitor' && (
                         <WiredMonitorTabView
                             monitorStats={monitorStats}
@@ -3118,6 +3146,7 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                             monitorHistoryRows={monitorHistoryRows}
                             onOpenMonitorInfo={() => setIsMonitorInfoOpen(true)}
                             onOpenMonitorHistory={() => setIsMonitorHistoryOpen(true)}
+                            onOpenRoomLogs={() => setIsRoomLogsOpen(true)}
                             onClearMonitorLogs={clearMonitorLogs}
                             onOpenMonitorLogDetails={openMonitorLogDetails}
                         />
@@ -3160,9 +3189,10 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                             onPickVariable={(key) => setSelectedVariableKeys((prev) => ({ ...prev, [variablesType]: key }))}
                             canVariableHighlight={canVariableHighlight}
                             variableManageCanOpen={variableManageCanOpen}
+                            canVariableClear={canVariableClear}
+                            onClearVariable={confirmClearVariable}
                             onOpenManagePanel={() => {
                                 requestUserVariables();
-                                setVariableManagePage(1);
                                 setSelectedManagedVariableEntry(null);
                                 setIsVariableManageOpen(true);
                             }}
@@ -3170,19 +3200,12 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                             selectedVariableTextValues={selectedVariableTextValues}
                         />
                     )}
-                    {activeTab === 'settings' && <WiredToolsSettingsTabView />}
-                    {activeTab !== 'monitor' && activeTab !== 'inspection' && activeTab !== 'variables' && activeTab !== 'settings' && (
-                        <div className="p-4 min-h-[360px] flex items-center justify-center text-center text-[#555]">
-                            <div className="max-w-[320px]">
-                                <Text bold>{currentTabLabel}</Text>
-                                <div className="mt-2 text-[12px]">This tab is now ready to be wired into the new `:wired` tools flow.</div>
-                            </div>
-                        </div>
-                    )}
-                </NitroCardContentView>
-            </NitroCardView>
+                    {activeTab === 'settings' && <WiredToolsSettingsTabView onOpenSelfDonation={() => setIsSelfDonationOpen(true)} />}
+                    {activeTab === 'chests' && <WiredChestsTabView />}
+                </OctaneCardContentView>
+            </OctaneCardView>
             {isMonitorHistoryOpen && (
-                <NitroCardView
+                <OctaneCardView
                     className="min-w-[760px] max-w-[760px] max-h-[520px]"
                     theme="primary-slim"
                     uniqueKey="wired-monitor-history"
@@ -3190,8 +3213,8 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                     offsetLeft={560}
                     offsetTop={40}
                 >
-                    <NitroCardHeaderView headerText="Wired Monitor Logs" onCloseClick={() => setIsMonitorHistoryOpen(false)} />
-                    <NitroCardContentView className="text-black bg-[#f4efe3] p-3 flex flex-col gap-3" overflow="hidden">
+                    <OctaneCardHeaderView headerText="Wired Monitor Logs" onCloseClick={() => setIsMonitorHistoryOpen(false)} />
+                    <OctaneCardContentView className="text-black bg-[#f4efe3] p-3 flex flex-col gap-3" overflow="hidden">
                         <div className="flex flex-wrap items-center gap-2 text-[12px]">
                             <span className="text-[#555]">Severity:</span>
                             {['ALL', 'WARNING', 'ERROR'].map((severity) => (
@@ -3260,11 +3283,11 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                                 </tbody>
                             </table>
                         </div>
-                    </NitroCardContentView>
-                </NitroCardView>
+                    </OctaneCardContentView>
+                </OctaneCardView>
             )}
             {isMonitorInfoOpen && (
-                <NitroCardView
+                <OctaneCardView
                     className="min-w-[560px] max-w-[560px] max-h-[520px]"
                     theme="primary-slim"
                     uniqueKey="wired-monitor-info"
@@ -3272,8 +3295,8 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                     offsetLeft={610}
                     offsetTop={80}
                 >
-                    <NitroCardHeaderView headerText="Wired Monitor Information" onCloseClick={() => setIsMonitorInfoOpen(false)} />
-                    <NitroCardContentView className="text-black bg-[#f4efe3] p-4 flex flex-col gap-4 overflow-y-auto">
+                    <OctaneCardHeaderView headerText="Wired Monitor Information" onCloseClick={() => setIsMonitorInfoOpen(false)} />
+                    <OctaneCardContentView className="text-black bg-[#f4efe3] p-4 flex flex-col gap-4 overflow-y-auto">
                         {monitorInfoSections.map((section) => (
                             <div key={section.title} className="flex flex-col gap-1">
                                 <Text bold>{section.title}</Text>
@@ -3282,171 +3305,24 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                                 ))}
                             </div>
                         ))}
-                    </NitroCardContentView>
-                </NitroCardView>
+                    </OctaneCardContentView>
+                </OctaneCardView>
             )}
-            {isVariableManageOpen && !!selectedVariableDefinition && (
-                <NitroCardView
-                    className="min-w-[860px] max-w-[860px] max-h-[620px]"
-                    theme="primary-slim"
-                    uniqueKey="wired-variable-management"
-                    windowPosition={DraggableWindowPosition.TOP_LEFT}
-                    offsetLeft={540}
-                    offsetTop={60}
-                >
-                    <NitroCardHeaderView headerText="Variable Management" onCloseClick={() => setIsVariableManageOpen(false)} />
-                    <NitroCardContentView className="text-black bg-[#f4efe3] p-3 flex flex-col gap-3" overflow="hidden">
-                        <div className="rounded border border-[#c8c2b2] bg-white p-3 flex items-center justify-between gap-3">
-                            <div className="grow flex flex-col items-center text-center">
-                                <Text>{variableManageDescription}</Text>
-                                <Text>
-                                    <b>Variable name:</b> {selectedVariableDefinition.key}
-                                </Text>
-                            </div>
-                            <Button variant="secondary" onClick={() => requestUserVariables()}>
-                                Refresh
-                            </Button>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4 text-[12px]">
-                            <div className="flex items-center gap-2">
-                                <Text>{variableManageTypeLabel}:</Text>
-                                <select
-                                    className="rounded border border-[#b8b2a4] bg-white px-2 py-[2px] text-[12px]"
-                                    value={variableManageTypeFilter}
-                                    onChange={(event) => {
-                                        setVariableManageTypeFilter(event.target.value);
-                                        setVariableManagePage(1);
-                                    }}
-                                >
-                                    {variableManageTypeOptions.map((type) => (
-                                        <option key={type} value={type}>
-                                            {type === 'ALL' ? (variablesType === 'global' ? 'All entries' : 'All types') : type}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Text>Sort by:</Text>
-                                <select
-                                    className="rounded border border-[#b8b2a4] bg-white px-2 py-[2px] text-[12px]"
-                                    value={variableManageSort}
-                                    onChange={(event) => {
-                                        setVariableManageSort(event.target.value);
-                                        setVariableManagePage(1);
-                                    }}
-                                >
-                                    {variableManageSortOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                        <div className="grow overflow-y-auto border border-[#d1ccbf] rounded bg-white">
-                            <table className="w-full text-[12px]">
-                                <thead className="bg-[#efede5] sticky top-0">
-                                    <tr>
-                                        <th className="text-left px-2 py-1">{variableManageCategoryHeader}</th>
-                                        <th className="text-left px-2 py-1">Name</th>
-                                        {!!selectedVariableDefinition.hasCreationTime && <th className="text-left px-2 py-1">Creation time</th>}
-                                        {!!selectedVariableDefinition.hasUpdateTime && <th className="text-left px-2 py-1">Last update time</th>}
-                                        <th className="text-left px-2 py-1">Value</th>
-                                        <th className="text-left px-2 py-1">Manage</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {!pagedVariableManageEntries.length && (
-                                        <tr>
-                                            <td className="px-2 py-3 text-center text-[#8b8678]" colSpan={selectedVariableDefinition.hasCreationTime ? 6 : 5}>
-                                                No entries found for the current filters
-                                            </td>
-                                        </tr>
-                                    )}
-                                    {pagedVariableManageEntries.map((entry, index) => (
-                                        <tr key={`${entry.entityId}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-[#f8f6f0]'}>
-                                            <td className="px-2 py-1">{entry.categoryLabel}</td>
-                                            <td className="px-2 py-1 text-[#1b57b2] underline underline-offset-2">{entry.entityName}</td>
-                                            {!!selectedVariableDefinition.hasCreationTime && (
-                                                <td className="px-2 py-1">{formatVariableTimestamp(entry.createdAt)}</td>
-                                            )}
-                                            {!!selectedVariableDefinition.hasUpdateTime && (
-                                                <td className="px-2 py-1">{formatVariableTimestamp(entry.updatedAt)}</td>
-                                            )}
-                                            <td className="px-2 py-1">{entry.value ?? variableManageNoValueLabel}</td>
-                                            <td className="px-2 py-1">
-                                                <button
-                                                    className="text-[#1b57b2] underline underline-offset-2"
-                                                    type="button"
-                                                    onClick={() => setSelectedManagedVariableEntry(entry)}
-                                                >
-                                                    {entry.manageLabel}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="flex gap-2">
-                                <button
-                                    className="min-w-[36px] rounded border border-[#b8b2a4] bg-white px-2 py-1 text-[12px] disabled:opacity-40"
-                                    disabled={clampedVariableManagePage <= 1}
-                                    type="button"
-                                    onClick={() => setVariableManagePage(1)}
-                                >
-                                    &laquo;
-                                </button>
-                                <button
-                                    className="min-w-[36px] rounded border border-[#b8b2a4] bg-white px-2 py-1 text-[12px] disabled:opacity-40"
-                                    disabled={clampedVariableManagePage <= 1}
-                                    type="button"
-                                    onClick={() => setVariableManagePage((value) => Math.max(1, value - 1))}
-                                >
-                                    &lsaquo;
-                                </button>
-                            </div>
-                            <div className="flex items-center gap-2 text-[12px] text-[#555]">
-                                <span>{`${filteredVariableManageEntries.length} entr${filteredVariableManageEntries.length === 1 ? 'y' : 'ies'} found. Showing page`}</span>
-                                <input
-                                    className="w-[42px] rounded border border-[#b8b2a4] bg-white px-1 py-[2px] text-center text-[12px]"
-                                    type="number"
-                                    min={1}
-                                    max={variableManagePageCount}
-                                    value={clampedVariableManagePage}
-                                    onChange={(event) => {
-                                        const nextPage = Number(event.target.value || 1);
-
-                                        setVariableManagePage(Math.min(variableManagePageCount, Math.max(1, nextPage)));
-                                    }}
-                                />
-                                <span>{`of ${variableManagePageCount}`}</span>
-                            </div>
-                            <div className="flex gap-2">
-                                <button
-                                    className="min-w-[36px] rounded border border-[#b8b2a4] bg-white px-2 py-1 text-[12px] disabled:opacity-40"
-                                    disabled={clampedVariableManagePage >= variableManagePageCount}
-                                    type="button"
-                                    onClick={() => setVariableManagePage((value) => Math.min(variableManagePageCount, value + 1))}
-                                >
-                                    &rsaquo;
-                                </button>
-                                <button
-                                    className="min-w-[36px] rounded border border-[#b8b2a4] bg-white px-2 py-1 text-[12px] disabled:opacity-40"
-                                    disabled={clampedVariableManagePage >= variableManagePageCount}
-                                    type="button"
-                                    onClick={() => setVariableManagePage(variableManagePageCount)}
-                                >
-                                    &raquo;
-                                </button>
-                            </div>
-                        </div>
-                    </NitroCardContentView>
-                </NitroCardView>
+            {isVariableManageOpen && !!selectedVariableDefinition?.itemId && variablesType !== 'context' && (
+                <WiredVariableOwnersView
+                    variableId={wiredVariableIdOf(variablesType, selectedVariableDefinition.itemId)}
+                    variableName={selectedVariableDefinition.key}
+                    variablesType={variablesType}
+                    hasValue={!!selectedVariableDefinition.hasValue}
+                    describeHolder={describeVariableHolder}
+                    onManage={setSelectedManagedVariableEntry}
+                    onClose={() => setIsVariableManageOpen(false)}
+                />
             )}
+            {isRoomLogsOpen && <WiredRoomLogsView onClose={() => setIsRoomLogsOpen(false)} />}
+            {isSelfDonationOpen && <WiredSelfDonationView onClose={() => setIsSelfDonationOpen(false)} />}
             {!!selectedManagedVariableEntry && !!selectedVariableDefinition && (
-                <NitroCardView
+                <OctaneCardView
                     className="min-w-[430px] max-w-[430px] max-h-[620px]"
                     theme="primary-slim"
                     uniqueKey="wired-variable-management-entry"
@@ -3454,8 +3330,8 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                     offsetLeft={890}
                     offsetTop={110}
                 >
-                    <NitroCardHeaderView headerText={managedHolderPanelTitle} onCloseClick={() => setSelectedManagedVariableEntry(null)} />
-                    <NitroCardContentView className="text-black bg-[#f4efe3] p-3 flex flex-col gap-3 relative" overflow="hidden">
+                    <OctaneCardHeaderView headerText={managedHolderPanelTitle} onCloseClick={() => setSelectedManagedVariableEntry(null)} />
+                    <OctaneCardContentView className="text-black bg-[#f4efe3] p-3 flex flex-col gap-3 relative" overflow="hidden">
                         <div className="rounded border border-[#c8c2b2] bg-white p-3 flex items-center justify-between gap-3">
                             <div className="grow text-center">
                                 <Text>{managedHolderWarningText}</Text>
@@ -3605,11 +3481,11 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                                 Give variable
                             </Button>
                         </div>
-                    </NitroCardContentView>
-                </NitroCardView>
+                    </OctaneCardContentView>
+                </OctaneCardView>
             )}
             {!!selectedMonitorErrorInfo && (
-                <NitroCardView
+                <OctaneCardView
                     className="min-w-[470px] max-w-[470px] max-h-[500px]"
                     theme="primary-slim"
                     uniqueKey="wired-monitor-error-info"
@@ -3617,14 +3493,14 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                     offsetLeft={660}
                     offsetTop={120}
                 >
-                    <NitroCardHeaderView
+                    <OctaneCardHeaderView
                         headerText="Wired Error Information"
                         onCloseClick={() => {
                             setSelectedMonitorErrorType(null);
                             setSelectedMonitorLogDetails(null);
                         }}
                     />
-                    <NitroCardContentView className="text-black bg-[#f4efe3] p-4 flex flex-col gap-3 overflow-y-auto">
+                    <OctaneCardContentView className="text-black bg-[#f4efe3] p-4 flex flex-col gap-3 overflow-y-auto">
                         <div className="flex items-start justify-between gap-3">
                             <Text bold>{selectedMonitorErrorInfo.title}</Text>
                             <span
@@ -3661,8 +3537,8 @@ export const WiredCreatorToolsView: FC<{}> = () => {
                         {selectedMonitorErrorInfo.description.map((paragraph, index) => (
                             <Text key={index}>{paragraph}</Text>
                         ))}
-                    </NitroCardContentView>
-                </NitroCardView>
+                    </OctaneCardContentView>
+                </OctaneCardView>
             )}
         </>
     );

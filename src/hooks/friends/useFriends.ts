@@ -11,6 +11,7 @@ import {
     FriendRequestsEvent,
     GetFriendRequestsComposer,
     GetSessionDataManager,
+    MessageErrorEvent,
     MessengerInitComposer,
     MessengerInitEvent,
     MoveFriendToCategoryComposer,
@@ -18,11 +19,23 @@ import {
     RemoveFriendCategoryComposer,
     RenameFriendCategoryComposer,
     RequestFriendComposer,
+    RequestOfflineMessagesComposer,
     SetRelationshipStatusComposer
-} from '@nitrots/nitro-renderer';
-import { useEffect, useMemo, useState } from 'react';
-import { useBetween } from 'use-between';
-import { CloneObject, LocalizeText, MessengerFriend, MessengerRequest, MessengerSettings, NotificationAlertType, SendMessageComposer } from '../../api';
+} from '@octane/renderer';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { registerSharedHook, useSharedHook } from '@/state/useSharedHook';
+import {
+    CloneObject,
+    LocalizeText,
+    localizeWithFallback,
+    MessengerFriend,
+    MessengerRequest,
+    MessengerSettings,
+    NotificationAlertType,
+    NotificationBubbleType,
+    SendMessageComposer,
+    withUpdatedFriendCategories
+} from '../../api';
 import { useMessageEvent } from '../events';
 import { useNotification } from '../notification';
 
@@ -39,7 +52,10 @@ const useFriendsStore = () => {
     const [sentRequests, setSentRequests] = useState<number[]>([]);
     const [dismissedRequestIds, setDismissedRequestIds] = useState<number[]>([]);
     const [settings, setSettings] = useState<MessengerSettings>(null);
-    const { simpleAlert = null } = useNotification();
+    const [offlineMessagesReady, setOfflineMessagesReady] = useState(false);
+    const friendsRef = useRef<MessengerFriend[]>([]);
+    const lastRequestedFriendIdRef = useRef<number>(-1);
+    const { simpleAlert = null, showSingleBubble = null } = useNotification();
 
     const onlineFriends = useMemo(() => {
         const onlineFriends = friends.filter((friend) => friend.online);
@@ -113,6 +129,8 @@ const useFriendsStore = () => {
     const requestFriend = (userId: number, userName: string) => {
         if (!canRequestFriend(userId)) return false;
 
+        lastRequestedFriendIdRef.current = userId;
+
         setSentRequests((prevValue) => {
             const newSentRequests = [...prevValue];
 
@@ -155,6 +173,7 @@ const useFriendsStore = () => {
         setSettings(new MessengerSettings(parser.userFriendLimit, parser.normalFriendLimit, parser.extendedFriendLimit, parser.categories));
 
         SendMessageComposer(new GetFriendRequestsComposer());
+        SendMessageComposer(new FriendListUpdateComposer());
     });
 
     useMessageEvent<FriendListFragmentEvent>(FriendListFragmentEvent, (event) => {
@@ -172,12 +191,28 @@ const useFriendsStore = () => {
                 else newValue.push(newFriend);
             }
 
+            friendsRef.current = newValue;
+
             return newValue;
         });
+
+        if (parser.totalFragments === 0 || parser.fragmentNumber >= parser.totalFragments - 1) setOfflineMessagesReady(true);
     });
 
     useMessageEvent<FriendListUpdateEvent>(FriendListUpdateEvent, (event) => {
         const parser = event.getParser();
+        const previousFriends = new Map(friendsRef.current.map((friend) => [friend.id, friend]));
+        const onlineNotifications: MessengerFriend[] = [];
+
+        for (const friend of parser.updatedFriends) {
+            const previousFriend = previousFriends.get(friend.id);
+            const newFriend = new MessengerFriend();
+            newFriend.populate(friend);
+
+            if (previousFriend && !previousFriend.online && newFriend.online) onlineNotifications.push(newFriend);
+        }
+
+        setSettings((previous) => withUpdatedFriendCategories(previous, parser.categories));
 
         setFriends((prevValue) => {
             const newValue = [...prevValue];
@@ -204,8 +239,16 @@ const useFriendsStore = () => {
                 if (index > -1) newValue.splice(index, 1);
             }
 
+            friendsRef.current = newValue;
+
             return newValue;
         });
+
+        for (const friend of onlineNotifications) {
+            const text = localizeWithFallback('notifications.friend_online', `${friend.name} is online`, ['name'], [friend.name]);
+
+            showSingleBubble?.(text, NotificationBubbleType.FRIENDONLINE, friend.figure, `friends-messenger/${friend.id}`);
+        }
     });
 
     useMessageEvent<FriendRequestsEvent>(FriendRequestsEvent, (event) => {
@@ -236,6 +279,26 @@ const useFriendsStore = () => {
         simpleAlert(LocalizeText('friendlist.followerror.hotelview'), NotificationAlertType.DEFAULT, null, null, LocalizeText('friendlist.alert.title'));
     });
 
+    useMessageEvent<MessageErrorEvent>(MessageErrorEvent, (event) => {
+        const errorCode = event.getParser().errorCode;
+        const localizeKeys: Record<number, string> = {
+            1: 'friendlist.error.friendlistownlimit',
+            2: 'friendlist.error.friendlistlimitofrequester',
+            3: 'friendlist.error.friend_requests_disabled',
+            4: 'friendlist.error.requestnotfound'
+        };
+        const localizeKey = localizeKeys[errorCode];
+
+        if (!localizeKey) return;
+
+        const requestedFriendId = lastRequestedFriendIdRef.current;
+
+        if (requestedFriendId > 0) setSentRequests((prevValue) => prevValue.filter((userId) => userId !== requestedFriendId));
+
+        lastRequestedFriendIdRef.current = -1;
+        simpleAlert(LocalizeText(localizeKey), NotificationAlertType.DEFAULT, null, null, LocalizeText('friendlist.alert.title'));
+    });
+
     useMessageEvent<NewFriendRequestEvent>(NewFriendRequestEvent, (event) => {
         const parser = event.getParser();
         const request = parser.request;
@@ -257,7 +320,15 @@ const useFriendsStore = () => {
     });
 
     useEffect(() => {
+        if (!offlineMessagesReady) return;
+
+        SendMessageComposer(new RequestOfflineMessagesComposer());
+        setOfflineMessagesReady(false);
+    }, [offlineMessagesReady]);
+
+    useEffect(() => {
         SendMessageComposer(new MessengerInitComposer());
+        SendMessageComposer(new FriendListUpdateComposer());
 
         const interval = setInterval(() => SendMessageComposer(new FriendListUpdateComposer()), 120000);
 
@@ -310,7 +381,7 @@ export const useFriendsState = () => {
         offlineFriends,
         getFriend,
         canRequestFriend
-    } = useBetween(useFriendsStore);
+    } = useSharedHook(useFriendsStore);
 
     return {
         friends,
@@ -333,7 +404,7 @@ export const useFriendsState = () => {
  */
 export const useFriendsActions = () => {
     const { requestFriend, requestResponse, followFriend, updateRelationship, addCategory, renameCategory, removeCategory, moveFriendToCategory } =
-        useBetween(useFriendsStore);
+        useSharedHook(useFriendsStore);
 
     return {
         requestFriend,
@@ -353,4 +424,6 @@ export const useFriendsActions = () => {
  * composes both into the historical `useFriends()` shape so the 16
  * existing consumers keep working unchanged.
  */
-export const useFriends = () => useBetween(useFriendsStore);
+export const useFriends = () => useSharedHook(useFriendsStore);
+
+registerSharedHook(useFriendsStore);

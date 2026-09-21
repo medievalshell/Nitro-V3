@@ -4,7 +4,7 @@ import { getPrefixEffectStyle, getPrefixFontStyle, IPrefixItem, LocalizeText, pa
 import { GetNickIconUrl } from '../../../../assets/images/user_custom/nick_icons';
 import { Button } from '../../../../common';
 import { useInventoryNickIcons, useInventoryPrefixes, useNotification } from '../../../../hooks';
-import { NitroButton } from '../../../../layout';
+import { OctaneButton } from '../../../../layout';
 
 type InventoryIdentityTab = 'prefixes' | 'icons';
 
@@ -145,14 +145,14 @@ export const InventoryPrefixView: FC<{}> = () => {
             <div className="shrink-0 rounded border border-black/10 bg-[#C9C9C9] p-1">
                 <div className="flex items-center gap-2">
                     <button
-                        className={`rounded px-3 py-1.5 text-[11px] font-bold transition-colors ${activeTab === 'prefixes' ? 'bg-[#1e7295] text-white' : 'bg-white text-black'}`}
+                        className={`rounded px-3 py-1.5 text-[11px] font-bold transition-colors ${activeTab === 'prefixes' ? 'bg-[#418db0] text-white' : 'bg-white text-black'}`}
                         type="button"
                         onClick={() => setActiveTab('prefixes')}
                     >
                         Prefixes
                     </button>
                     <button
-                        className={`rounded px-3 py-1.5 text-[11px] font-bold transition-colors ${activeTab === 'icons' ? 'bg-[#1e7295] text-white' : 'bg-white text-black'}`}
+                        className={`rounded px-3 py-1.5 text-[11px] font-bold transition-colors ${activeTab === 'icons' ? 'bg-[#418db0] text-white' : 'bg-white text-black'}`}
                         type="button"
                         onClick={() => setActiveTab('icons')}
                     >
@@ -215,16 +215,16 @@ export const InventoryPrefixView: FC<{}> = () => {
                                     />
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <NitroButton
+                                    <OctaneButton
                                         className="grow"
                                         onClick={() => (selectedPrefix.active ? deactivatePrefix() : activatePrefix(selectedPrefix.id))}
                                     >
                                         {selectedPrefix.active ? 'Deactivate' : 'Activate'}
-                                    </NitroButton>
+                                    </OctaneButton>
                                     {!selectedPrefix.active && (
-                                        <NitroButton className="bg-danger! hover:bg-danger/80! p-1" onClick={attemptDeletePrefix}>
+                                        <OctaneButton className="bg-danger! hover:bg-danger/80! p-1" onClick={attemptDeletePrefix}>
                                             <FaTrashAlt className="fa-icon" />
-                                        </NitroButton>
+                                        </OctaneButton>
                                     )}
                                 </div>
                             </div>
